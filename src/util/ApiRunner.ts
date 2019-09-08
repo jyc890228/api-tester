@@ -5,32 +5,34 @@ import {TestResults} from "../model/TestResults";
 import axios, {AxiosError, AxiosResponse} from 'axios';
 
 interface Listener {
-    start: (intervalId: number) => void;
+    start: () => void;
     each: (results: ApiCallResults) => void;
     end: () => void;
 }
 
 export const run = (data: TestCase, listener: Listener): TestResults => {
-    let runningTestCount = 0;
-    const intervalId = setInterval(() => {
-        if (runningTestCount++ < data.testCount) {
-            runTest(runningTestCount, data, listener);
-        } else {
-            clearInterval(intervalId);
-            listener.end();
-        }
-    }, data.testSpeedInMilli);
+    setTimeout(async () => {
+        const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-    listener.start(intervalId as any);
+        for (let runningTestCount = 0; runningTestCount < data.testCount; runningTestCount++) {
+            await runTest(runningTestCount, data).then(listener.each);
+            await wait(data.testSpeedInMilli);
+        }
+        listener.end();
+    }, 0);
+
+    listener.start();
     return {
         testCaseId: data.id,
         id: 0,
         startAt: new Date(),
-        results: []
+        data: [],
+        result: 'progress'
     };
 };
 
-function runTest(order: number, data: TestCase, listener: Listener) {
+
+function runTest(order: number, data: TestCase) {
     const promiseList = beforeRequest(data).map(req => {
         return req.promise
             .then((res: AxiosResponse) => {
@@ -42,13 +44,15 @@ function runTest(order: number, data: TestCase, listener: Listener) {
     });
 
 
-    Promise.all(promiseList).then(results => listener.each({
-        order: order,
-        path: results[0].request.path,
-        payload: results[0].request.payload,
-        server1Result: results.find(result => result.request.url.startsWith(data.server1))!!,
-        server2Result: results.find(result => result.request.url.startsWith(data.server2))!!,
-    }));
+    return Promise.all(promiseList).then(results => {
+        return {
+            order: order,
+            path: results[0].request.path,
+            payload: results[0].request.payload,
+            server1Result: results.find(result => result.request.url.startsWith(data.server1))!!,
+            server2Result: results.find(result => result.request.url.startsWith(data.server2))!!,
+        }
+    });
 }
 
 

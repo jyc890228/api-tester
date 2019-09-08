@@ -13,7 +13,8 @@ export interface TestResults {
     testCaseId: number;
     id: number;
     startAt?: Date;
-    results: TestResult[];
+    data: TestResult[];
+    result: 'success' | 'fail' | 'progress'
 }
 
 type persistentStructure = {
@@ -26,7 +27,7 @@ const key = '/resources/testResult.json';
 export const findAll = (): persistentStructure => persistentContext.load(key) || {idSequence: 0, byTestCaseId: {}} as persistentStructure;
 
 export const findTestResultsByTestCaseId = (testCaseId: number): TestResults[] => {
-    return findAll().byTestCaseId[testCaseId]
+    return findAll().byTestCaseId[testCaseId] || []
 };
 
 export const findTestResultByTestCaseIdAndId = (testCaseId: number, id: number): TestResults => {
@@ -45,7 +46,7 @@ export const save = (testResults: TestResults) => {
 
 export const appendTestResult = (testCaseId: number, id: number, testResult: TestResult) => {
     const testCases = findTestResultByTestCaseIdAndId(testCaseId, id);
-    testCases.results.push(testResult);
+    testCases.data.push(testResult);
     update(testCases);
 };
 

@@ -33,7 +33,7 @@ const TestResultList: React.FC<Props> = (props: Props) => {
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {testResults.results.map(result => <TestResultRow key={result.order} result={result}/>)}
+                    {testResults.data.map(result => <TestResultRow key={result.order} result={result}/>)}
                 </TableBody>
             </Table>
         </DialogContent>
