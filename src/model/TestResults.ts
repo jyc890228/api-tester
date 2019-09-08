@@ -18,15 +18,15 @@ export interface TestResults {
 
 type persistentStructure = {
     idSequence: number;
-    history: {[testCaseId: number]: TestResults[]}
+    byTestCaseId: {[testCaseId: number]: TestResults[]}
 };
 
 const key = '/resources/testResult.json';
 
-export const findAll = (): persistentStructure => persistentContext.load(key) || {idSequence: 0, history: {}} as persistentStructure;
+export const findAll = (): persistentStructure => persistentContext.load(key) || {idSequence: 0, byTestCaseId: {}} as persistentStructure;
 
 export const findTestResultsByTestCaseId = (testCaseId: number): TestResults[] => {
-    return findAll().history[testCaseId]
+    return findAll().byTestCaseId[testCaseId]
 };
 
 export const findTestResultByTestCaseIdAndId = (testCaseId: number, id: number): TestResults => {
@@ -35,11 +35,11 @@ export const findTestResultByTestCaseIdAndId = (testCaseId: number, id: number):
 
 export const save = (testResults: TestResults) => {
     const data = findAll();
-    if (!data.history[testResults.testCaseId])
-        data.history[testResults.testCaseId] = [];
+    if (!data.byTestCaseId[testResults.testCaseId])
+        data.byTestCaseId[testResults.testCaseId] = [];
 
     testResults.id = generateId(data);
-    data.history[testResults.testCaseId].push(testResults);
+    data.byTestCaseId[testResults.testCaseId].push(testResults);
     persistentContext.save(key, data);
 };
 
@@ -51,8 +51,8 @@ export const appendTestResult = (testCaseId: number, id: number, testResult: Tes
 
 export const update = (testResults: TestResults) => {
     const data = findAll();
-    const index = data.history[testResults.testCaseId].findIndex(record => record.id === testResults.id);
-    data.history[testResults.testCaseId][index] = testResults;
+    const index = data.byTestCaseId[testResults.testCaseId].findIndex(record => record.id === testResults.id);
+    data.byTestCaseId[testResults.testCaseId][index] = testResults;
     persistentContext.save(key, data);
 };
 
@@ -62,7 +62,7 @@ const generateId = (data: persistentStructure): number => {
     }
 
     let id = 0;
-    Object.values(data.history).forEach(histories => histories.forEach(history => {
+    Object.values(data.byTestCaseId).forEach(histories => histories.forEach(history => {
         id = Math.max(id, history.id);
     }));
 

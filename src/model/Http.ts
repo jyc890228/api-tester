@@ -1,3 +1,5 @@
+import {AxiosResponse} from "axios";
+
 export enum RequestMethod {
     GET = 'GET', POST = 'POST', PUT = 'PUT', DELETE = 'DELETE'
 }
@@ -8,7 +10,7 @@ export interface ServerRequest {
     queryString: string;
     method: RequestMethod;
     payload: string;
-    promise: Promise<Response>;
+    promise: Promise<AxiosResponse>;
 }
 
 export interface ServerResponse {

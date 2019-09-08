@@ -2,6 +2,7 @@ import {Param, TestCase} from "../model/TestCase";
 import {RequestMethod, ServerRequest} from "../model/Http";
 import {ApiCallResults} from "../model/ApiCallResult";
 import {TestResults} from "../model/TestResults";
+import axios, {AxiosError, AxiosResponse} from 'axios';
 
 interface Listener {
     start: (intervalId: number) => void;
@@ -32,10 +33,10 @@ export const run = (data: TestCase, listener: Listener): TestResults => {
 function runTest(order: number, data: TestCase, listener: Listener) {
     const promiseList = beforeRequest(data).map(req => {
         return req.promise
-            .then(res => res.json().then(data => {
-                return {request: req, response: {ok: res.ok, data}}
-            }))
-            .catch(error => {
+            .then((res: AxiosResponse) => {
+                return {request: req, response: {ok: true, data: res.data}}
+            })
+            .catch((error: AxiosError) => {
                 return {request: req, response: {ok: false, data: error.message}}
             })
     });
@@ -59,13 +60,18 @@ function beforeRequest(data: TestCase): ServerRequest[] {
         const queryString = makeQueryString(data.pathVariables, data.params);
         requests.forEach(req => {
             req.path += queryString;
-            req.promise = fetch(`${req.url}${req.path}`);
+            req.promise = axios.get(`${req.url}${req.path}`);
         });
     } else {
         const payload = makeJsonPayload(data.params);
+
         requests.forEach(req => {
             req.payload = payload;
-            req.promise = fetch(`${req.url}${req.path}`, {method: req.method, body: req.payload})
+            req.promise = axios.request({
+                url: `${req.url}${req.path}`,
+                method: req.method,
+                data: req.payload
+            })
         });
     }
 
