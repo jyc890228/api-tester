@@ -1,6 +1,6 @@
 import React, {FormEvent} from "react";
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Input, TextField} from "@material-ui/core";
-import {deleteById, findById, Param, save, testCaseTemplate, update} from "../model/TestCase";
+import {deleteById, findById, Param, save, TestCase, update} from "../model/TestCase";
 import {RequestMethod} from "../model/Http";
 
 export const useFormOpen = () => {
@@ -32,12 +32,26 @@ interface Props {
 
 const TestCaseForm: React.FC<Props> = (props: Props) => {
 
-    const [formData, setFormData] = React.useState(testCaseTemplate);
+    const [formData, setFormData] = React.useState({
+        id: 1,
+        testCount: 100,
+        testSpeedInMilli: 1000,
+        server1: 'http://localhost:8006',
+        server2: 'http://localhost:8080',
+        method: RequestMethod.GET,
+        path: '',
+        pathVariables: [],
+        params: []
+    } as TestCase);
 
     React.useEffect(() => {
-        const initValue = findById(props.testCaseIdForEdit!!);
-        if (initValue) {
-            setFormData(initValue);
+        if (props.testCaseIdForEdit) {
+            const initValue = findById(props.testCaseIdForEdit);
+            if (initValue) {
+                setFormData(initValue);
+            } else {
+                alert('can not found test case for editing!')
+            }
         }
     }, [props.testCaseIdForEdit]);
 
@@ -93,7 +107,7 @@ const TestCaseForm: React.FC<Props> = (props: Props) => {
                         <TextField type='text' label='path' name='path' value={formData.path} onChange={updateValue} required style={{width: 'calc(100% - 75px)'}}/>
                     </div>
                     <Button type='button' onClick={addParam}>Add Param</Button>
-                    {formData.params.map((param: Param, idx) => <ParamRow key={idx} index={idx} param={param} update={updateParam} delete={deleteParam}/>)}
+                    {formData.params.map((param: Param, idx) => <ParamRow key={idx} index={idx} param={param} onChange={updateParam} handleDeleteClick={deleteParam}/>)}
                 </DialogContent>
                 <DialogActions>
                     {props.testCaseIdForEdit ? <Button onClick={deleteTestCase} color='secondary'>Delete</Button> : null}
@@ -108,15 +122,15 @@ const TestCaseForm: React.FC<Props> = (props: Props) => {
 interface ParamProps {
     param: Param;
     index: number;
-    update: (e: ChangeEvent, idx: number) => void;
-    delete: (idx: number) => void;
+    onChange: (e: ChangeEvent, idx: number) => void;
+    handleDeleteClick: (idx: number) => void;
 }
 
-const ParamRow: React.FC<ParamProps> = (props: ParamProps) => <div>
-    <Input name='name' value={props.param.name} onChange={e => props.update(e, props.index)} required/>
+const ParamRow: React.FC<ParamProps> = ({param, index, onChange, handleDeleteClick}) => <div>
+    <Input name='name' value={param.name} onChange={e => onChange(e, index)} required/>
     <span> : </span>
-    <Input name='value' value={props.param.value} onChange={e => props.update(e, props.index)} required/>
-    <Button onClick={() => props.delete(props.index)}>X</Button>
+    <Input name='value' value={param.value} onChange={e => onChange(e, index)} required/>
+    <Button onClick={() => handleDeleteClick(index)}>X</Button>
 </div>;
 
 export default TestCaseForm;

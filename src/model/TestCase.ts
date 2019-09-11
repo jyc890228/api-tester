@@ -13,18 +13,6 @@ export interface TestCase {
     params: Param[];
 }
 
-export const testCaseTemplate: TestCase = {
-    id: 1,
-    testCount: 100,
-    testSpeedInMilli: 1000,
-    server1: 'http://localhost:8006',
-    server2: 'http://localhost:8080',
-    method: RequestMethod.GET,
-    path: '',
-    pathVariables: [],
-    params: []
-};
-
 export interface Param {
     name: string;
     // , 로 나열시 무작위 선택.
