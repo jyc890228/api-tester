@@ -1,4 +1,3 @@
-import {PropertyValidationResult} from "./PropertyValidationResult";
 import persistentContext from "../util/PersistentContext";
 
 export interface TestResult {
@@ -6,7 +5,9 @@ export interface TestResult {
     success: boolean;
     path: string;
     payload: string;
-    propertyValidateResults: PropertyValidationResult[];
+    failList: any[];
+    left: any;
+    right: any;
 }
 
 export interface TestResults {

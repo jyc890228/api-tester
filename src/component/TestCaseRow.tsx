@@ -3,8 +3,15 @@ import {Button, TableCell, TableRow} from "@material-ui/core";
 import {TestCase} from "../model/TestCase";
 import {run} from "../util/ApiRunner";
 import {ApiCallResults} from "../model/ApiCallResult";
-import {assertResponse} from "../util/ResponseValidator";
-import {appendTestResult, save, TestResult, TestResults, update} from "../model/TestResults";
+import {compare} from "../matcher/Comparator";
+import {
+    appendTestResult,
+    findTestResultsByTestCaseId,
+    save,
+    TestResult,
+    TestResults,
+    update
+} from "../model/TestResults";
 import TestResultList from "./TestResultList";
 import TestHistoryList from "./TestHistoryList";
 
@@ -19,11 +26,28 @@ const TestCaseRow: React.FC<Props> = (props: Props) => {
     const [successCount, setSuccessCount] = React.useState(0);
     const [failCount, setFailCount] = React.useState(0);
     const [running, setRunning] = React.useState(false);
-    const [latestTest, setLatestTest] = React.useState({testCaseId: props.data.id, id: 0, data: [], result: 'progress'} as TestResults);
+    const [latestTest, setLatestTest] = React.useState({
+        testCaseId: props.data.id,
+        id: 0,
+        data: [],
+        result: 'progress'
+    } as TestResults);
+
+    React.useEffect(() => {
+        const testResults = findTestResultsByTestCaseId(props.data.id);
+        if (testResults.length) {
+            const latestTestResult = testResults.sort((r1, r2) => r1.id < r2.id ? 1 : 0)[testResults.length - 1];
+            setSuccessCount(latestTestResult.data.filter(r => r.success).length);
+            setFailCount(latestTestResult.data.filter(r => !r.success).length);
+            setLatestTest(latestTestResult);
+        }
+    }, [props.data.id]);
 
     const handleStartClick = () => {
         const runningTest = run(props.data, {
-            start: () => {console.log(`test start`)},
+            start: () => {
+                console.log(`test start`)
+            },
             each: (apiCallResults: ApiCallResults) => updateState(assertAndPersist(apiCallResults)),
             end: () => {
                 const failTest = runningTest.data.find(d => !d.success);
@@ -37,7 +61,23 @@ const TestCaseRow: React.FC<Props> = (props: Props) => {
         setLatestTest(runningTest);
 
         const assertAndPersist = (apiCallResults: ApiCallResults): TestResult => {
-            const testResult = assertResponse(apiCallResults);
+            let result = compare({
+                sourceName: apiCallResults.server1Result.request.url,
+                value: apiCallResults.server1Result.response.data
+            }, {
+                sourceName: apiCallResults.server2Result.request.url,
+                value: apiCallResults.server2Result.response.data
+            }, {strict: false});
+
+            const testResult = {
+                order: apiCallResults.order,
+                path: apiCallResults.path,
+                payload: apiCallResults.payload,
+                success: result.length === 0,
+                failList: result,
+                left: apiCallResults.server1Result.response.data,
+                right: apiCallResults.server2Result.response.data
+            };
             appendTestResult(runningTest.testCaseId, runningTest.id, testResult);
             return testResult;
         };
@@ -50,7 +90,8 @@ const TestCaseRow: React.FC<Props> = (props: Props) => {
 
     };
 
-    const handleStopClick = () => {};
+    const handleStopClick = () => {
+    };
     const handleOpen = () => setOpen(true);
     const handleClose = () => setOpen(false);
     return <>

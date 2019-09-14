@@ -30,6 +30,7 @@ const TestResultList: React.FC<Props> = (props: Props) => {
                         <TableCell>Order</TableCell>
                         <TableCell>Result</TableCell>
                         <TableCell>Path</TableCell>
+                        <TableCell>Function</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>

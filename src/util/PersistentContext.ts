@@ -10,11 +10,11 @@ abstract class PersistentContext {
 class SessionPersistentContext extends PersistentContext {
 
     save(key: string, value: any): void {
-        sessionStorage.setItem(key, JSON.stringify(value));
+        localStorage.setItem(key, JSON.stringify(value));
     }
 
     load(key: string): any {
-        const data = sessionStorage.getItem(key);
+        const data = localStorage.getItem(key);
         return data ? JSON.parse(data) : null;
     }
 }
