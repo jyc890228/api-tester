@@ -52,8 +52,14 @@ export function compare(leftSource: Source, rightSource: Source, config: Config)
             if (left.hasOwnProperty(propertyName) && right.hasOwnProperty(propertyName)) {
                 let leftValue = left[propertyName], rightValue = right[propertyName];
                 if (0 <= index) {
-                    leftValue = leftValue[index];
-                    rightValue = rightValue[index];
+                    if (left[propertyName].hasOwnProperty(index) ^ right[propertyName].hasOwnProperty(index)) {
+                        left[propertyName].hasOwnProperty(propertyName) ? leftIndex++ : rightIndex++;
+                        failList.push({path: key, leftIndex, rightIndex, reason: `property ${propertyName}[${index}] does not exist!`});
+                        continue;
+                    } else {
+                        leftValue = leftValue[index];
+                        rightValue = rightValue[index];
+                    }
                 }
                 const failReason = valueTypeMatcher.match(propertyName, leftValue, rightValue);
                 if (failReason) {
@@ -73,7 +79,7 @@ export function compare(leftSource: Source, rightSource: Source, config: Config)
                             break;
                         case ObjectType.LIST: {
                             const maxLength = leftValue.length < rightValue.length ? rightValue.length : leftValue.length;
-                            keys = [...keys, ..._.range(maxLength).map(i => `${key}[${i}]`)];
+                            keys = [..._.range(maxLength).map(i => `${key}[${i}]`), ...keys];
                             break;
                         }
                         case ObjectType.OBJECT: {
@@ -81,7 +87,7 @@ export function compare(leftSource: Source, rightSource: Source, config: Config)
                                 ...Object.keys(leftValue).map(propertyName => `${key}${PROPERTY_PATH_SEPARATOR}${propertyName}`),
                                 ...Object.keys(rightValue).map(propertyName => `${key}${PROPERTY_PATH_SEPARATOR}${propertyName}`)
                             ]);
-                            keys = [...keys, ...Array.from(keySet)];
+                            keys = [...Array.from(keySet), ...keys];
                             break;
                         }
                     }

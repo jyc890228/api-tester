@@ -98,6 +98,7 @@ const TestCaseRow: React.FC<Props> = (props: Props) => {
         <TestHistoryList open={openHistory} handleClose={() => setOpenHistory(false)} testCaseId={props.data.id}/>
         <TestResultList open={open} handleClose={handleClose} testResults={latestTest}/>
         <TableRow>
+            <TableCell>{props.data.method}</TableCell>
             <TableCell>{props.data.path}</TableCell>
             <TableCell>
                 <span onClick={handleOpen} style={{cursor: 'pointer'}}>{props.data.testCount}</span>

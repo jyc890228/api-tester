@@ -13,7 +13,8 @@ const TestDashboard: React.FC = () => {
             <TestCaseForm open={open} handelClose={handleClose} testCaseIdForEdit={testCaseIdForEdit}/>
             <TableHead>
                 <TableRow>
-                    <TableCell>Test Name</TableCell>
+                    <TableCell>Method</TableCell>
+                    <TableCell>Path</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>Function</TableCell>
                 </TableRow>
