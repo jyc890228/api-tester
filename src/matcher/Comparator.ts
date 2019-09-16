@@ -1,4 +1,5 @@
 import _ from 'underscore';
+import {CompareFail} from "../model/CompareFail";
 
 const PROPERTY_PATH_SEPARATOR = '//';
 
@@ -15,21 +16,37 @@ interface Config {
     strict: boolean
 }
 
-export function compare(leftSource: Source, rightSource: Source, config: Config): any[] {
+function getObjectType(obj: any): ObjectType {
+    if (obj === null || obj === undefined) {
+        return ObjectType.NULL_OR_UNDEFINED;
+    }
+
+    if (Array.isArray(obj)) {
+        return ObjectType.LIST;
+    }
+
+    if (obj.constructor === ({}).constructor) {
+        return ObjectType.OBJECT;
+    }
+
+    return ObjectType.PRIMITIVE;
+}
+
+
+export function compare(leftSource: Source, rightSource: Source, config: Config): CompareFail[] {
     let leftIndex = 0, rightIndex = 0;
     let left = {root: leftSource.value} as any;
     let right = {root: rightSource.value} as any;
     let keys = ['root'];
-    const failList = [];
+    const failList: CompareFail[] = [];
     while (keys.length) {
         let key = keys.shift();
         if (key) {
-            let paths = [];
             let propertyName = key;
             let index = -1;
             if (propertyName.includes(PROPERTY_PATH_SEPARATOR)) {
-                let fullPaths = propertyName.split(PROPERTY_PATH_SEPARATOR);
-                paths = fullPaths.splice(0, fullPaths.length - 1).reduce((paths: string[], path: string) => {
+                const fullPaths = propertyName.split(PROPERTY_PATH_SEPARATOR);
+                const paths = fullPaths.splice(0, fullPaths.length - 1).reduce((paths: string[], path: string) => {
                     if (path.includes('[') && path.endsWith(']')) {
                         let index = parseInt(path.substring(path.indexOf('[') + 1, path.length - 1));
                         let propertyName = path.substring(0, path.indexOf('['));
@@ -40,6 +57,7 @@ export function compare(leftSource: Source, rightSource: Source, config: Config)
                     }
                     return paths;
                 }, []) as string[];
+
                 propertyName = fullPaths[fullPaths.length - 1];
                 if (propertyName.includes('[') && propertyName.endsWith(']')) {
                     index = parseInt(propertyName.substring(propertyName.indexOf('[') + 1, propertyName.length - 1));
@@ -53,7 +71,7 @@ export function compare(leftSource: Source, rightSource: Source, config: Config)
                 let leftValue = left[propertyName], rightValue = right[propertyName];
                 if (0 <= index) {
                     if (left[propertyName].hasOwnProperty(index) ^ right[propertyName].hasOwnProperty(index)) {
-                        left[propertyName].hasOwnProperty(propertyName) ? leftIndex++ : rightIndex++;
+                        left[propertyName].hasOwnProperty(index) ? leftIndex++ : rightIndex++;
                         failList.push({path: key, leftIndex, rightIndex, reason: `property ${propertyName}[${index}] does not exist!`});
                         continue;
                     } else {
@@ -61,32 +79,33 @@ export function compare(leftSource: Source, rightSource: Source, config: Config)
                         rightValue = rightValue[index];
                     }
                 }
-                const failReason = valueTypeMatcher.match(propertyName, leftValue, rightValue);
-                if (failReason) {
+
+                if (getObjectType(leftValue) !== getObjectType(rightValue)) {
                     leftIndex++;
                     rightIndex++;
-                    failList.push({path: key, leftIndex, rightIndex, reason: failReason});
+                    failList.push({path: key, leftIndex, rightIndex, reason: `property ${propertyName} value type mismatch. ${getObjectType(leftValue)} !== ${getObjectType(rightValue)}`});
                 } else {
                     switch (getObjectType(leftValue)) {
                         case ObjectType.NULL_OR_UNDEFINED:
                         case ObjectType.PRIMITIVE:
                             leftIndex++;
                             rightIndex++;
-                            const failReason = valueMatcher.match(propertyName, leftValue, rightValue);
-                            if (failReason) {
-                                failList.push({path: key, leftIndex, rightIndex, reason: failReason});
+                            if (leftValue !== rightValue) {
+                                let reason = `property ${propertyName} value does not equals! ${leftValue} !== ${rightValue}`;
+                                if (leftValue.constructor.name !== rightValue.constructor.name) {
+                                    reason = `property ${propertyName} value type mismatch. ${leftValue.constructor.name} !== ${rightValue.constructor.name}`
+                                }
+                                failList.push({path: key, leftIndex, rightIndex, reason});
                             }
                             break;
                         case ObjectType.LIST: {
-                            const maxLength = leftValue.length < rightValue.length ? rightValue.length : leftValue.length;
+                            const maxLength = Math.max(leftValue.length, rightValue.length);
                             keys = [..._.range(maxLength).map(i => `${key}[${i}]`), ...keys];
                             break;
                         }
                         case ObjectType.OBJECT: {
-                            const keySet = new Set([
-                                ...Object.keys(leftValue).map(propertyName => `${key}${PROPERTY_PATH_SEPARATOR}${propertyName}`),
-                                ...Object.keys(rightValue).map(propertyName => `${key}${PROPERTY_PATH_SEPARATOR}${propertyName}`)
-                            ]);
+                            const keyMapper = (propertyName: string) => `${key}${PROPERTY_PATH_SEPARATOR}${propertyName}`;
+                            const keySet = new Set([...Object.keys(leftValue).map(keyMapper), ...Object.keys(rightValue).map(keyMapper)]);
                             keys = [...Array.from(keySet), ...keys];
                             break;
                         }
@@ -108,45 +127,3 @@ export function compare(leftSource: Source, rightSource: Source, config: Config)
 
     return failList;
 }
-
-
-function getObjectType(obj: any): ObjectType {
-    if (obj === null || obj === undefined) {
-        return ObjectType.NULL_OR_UNDEFINED;
-    }
-
-    if (Array.isArray(obj)) {
-        return ObjectType.LIST;
-    }
-
-    if (obj.constructor === ({}).constructor) {
-        return ObjectType.OBJECT;
-    }
-
-    return ObjectType.PRIMITIVE;
-}
-
-interface Matcher {
-    match: (propertyName: string, left: any, right: any) => string;
-}
-
-export const valueTypeMatcher: Matcher = {
-    match: (propertyName, left, right): string => {
-        if (getObjectType(left) === getObjectType(right)) {
-            return '';
-        }
-        return `property ${propertyName} value type mismatch. ${getObjectType(left)} !== ${getObjectType(right)}`;
-    }
-};
-
-export const valueMatcher: Matcher = {
-    match: (propertyName, left, right): string => {
-        if (left === right) {
-            return '';
-        }
-        if (left.constructor.name === right.constructor.name) {
-            return `property ${propertyName} value type mismatch. ${left.constructor.name} !== ${right.constructor.name}`
-        }
-        return `property ${propertyName} value does not equals! ${left} !== ${right}`;
-    }
-};

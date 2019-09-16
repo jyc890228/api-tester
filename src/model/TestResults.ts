@@ -63,10 +63,9 @@ const generateId = (data: persistentStructure): number => {
         return data.idSequence += 1;
     }
 
-    let id = 0;
-    Object.values(data.byTestCaseId).forEach(histories => histories.forEach(history => {
-        id = Math.max(id, history.id);
-    }));
+    const id = Object.values(data.byTestCaseId).reduce((nextId, histories) => {
+        return Math.max(nextId, histories.reduce((id, history) => Math.max(id, history.id), nextId));
+    }, 0);
 
     data.idSequence = id + 1;
     return data.idSequence;
