@@ -6,8 +6,8 @@ export interface TestResult {
     path: string;
     payload: string;
     failList: any[];
-    left: any;
-    right: any;
+    left: {baseUrl: string, value: any};
+    right: {baseUrl: string, value: any};
 }
 
 export interface TestResults {

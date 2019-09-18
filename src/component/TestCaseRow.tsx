@@ -75,8 +75,8 @@ const TestCaseRow: React.FC<Props> = (props: Props) => {
                 payload: apiCallResults.payload,
                 success: result.length === 0,
                 failList: result,
-                left: apiCallResults.server1Result.response.data,
-                right: apiCallResults.server2Result.response.data
+                left: {baseUrl: apiCallResults.server1Result.request.url, value: apiCallResults.server1Result.response.data},
+                right: {baseUrl: apiCallResults.server2Result.request.url, value: apiCallResults.server2Result.response.data}
             };
             appendTestResult(runningTest.testCaseId, runningTest.id, testResult);
             return testResult;
@@ -92,20 +92,37 @@ const TestCaseRow: React.FC<Props> = (props: Props) => {
 
     const handleStopClick = () => {
     };
-    const handleOpen = () => setOpen(true);
+
+    const [filter, setFilter] = React.useState(() => (testResult: TestResult) => true);
+
+    const handleAllOpen = () => {
+        setFilter(() => () => true);
+        setOpen(true);
+    };
+
+    const handelSuccessOpen = () => {
+        setFilter(() => (testResult: TestResult) => testResult.success);
+        setOpen(true);
+    };
+
+    const handleFailOpen = () => {
+        setFilter(() => (testResult: TestResult) => !testResult.success);
+        setOpen(true);
+    };
+
     const handleClose = () => setOpen(false);
     return <>
         <TestHistoryList open={openHistory} handleClose={() => setOpenHistory(false)} testCaseId={props.data.id}/>
-        <TestResultList open={open} handleClose={handleClose} testResults={latestTest}/>
+        <TestResultList open={open} handleClose={handleClose} testResults={latestTest} filter={filter}/>
         <TableRow>
             <TableCell>{props.data.method}</TableCell>
             <TableCell>{props.data.path}</TableCell>
             <TableCell>
-                <span onClick={handleOpen} style={{cursor: 'pointer'}}>{props.data.testCount}</span>
+                <span onClick={handleAllOpen} style={{cursor: 'pointer'}}>{props.data.testCount}</span>
                 <span> : </span>
-                <span onClick={handleOpen} style={{color: 'blue', cursor: 'pointer'}}>{successCount}</span>
+                <span onClick={handelSuccessOpen} style={{color: 'blue', cursor: 'pointer'}}>{successCount}</span>
                 <span> / </span>
-                <span onClick={handleOpen} style={{color: 'red', cursor: 'pointer'}}>{failCount}</span>
+                <span onClick={handleFailOpen} style={{color: 'red', cursor: 'pointer'}}>{failCount}</span>
             </TableCell>
             <TableCell>
                 {running ? <Button onClick={handleStopClick}>Stop</Button> :

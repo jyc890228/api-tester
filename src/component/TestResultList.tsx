@@ -10,18 +10,22 @@ import {
     TableHead,
     TableRow
 } from "@material-ui/core";
-import {TestResults} from "../model/TestResults";
+import {TestResult, TestResults} from "../model/TestResults";
 import TestResultRow from "./TestResultRow";
 
 interface Props {
     open: boolean;
     handleClose: () => void;
-    testResults: TestResults
+    testResults: TestResults;
+    filter?: (testResult: TestResult) => boolean
 }
 
 const TestResultList: React.FC<Props> = (props: Props) => {
-    const {testResults} = props;
-    return <Dialog open={props.open} onClose={props.handleClose}>
+    const [testResults, setTestResults] = React.useState([] as TestResult[]);
+    React.useEffect(() => {
+        setTestResults(props.filter ? props.testResults.data.filter(props.filter) : props.testResults.data);
+    }, [props.testResults, props.filter]);
+    return <Dialog open={props.open} onClose={props.handleClose} maxWidth='xl'>
         <DialogTitle>Title</DialogTitle>
         <DialogContent>
             <Table>
@@ -34,7 +38,7 @@ const TestResultList: React.FC<Props> = (props: Props) => {
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {testResults.data.map(result => <TestResultRow key={result.order} result={result}/>)}
+                    {testResults.map(result => <TestResultRow key={result.order} result={result}/>)}
                 </TableBody>
             </Table>
         </DialogContent>
