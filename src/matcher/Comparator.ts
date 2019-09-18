@@ -1,7 +1,7 @@
 import _ from 'underscore';
 import {CompareFail} from "../model/CompareFail";
 
-const PROPERTY_PATH_SEPARATOR = ' > ';
+export const PROPERTY_PATH_SEPARATOR = ' > ';
 
 enum ObjectType {
     NULL_OR_UNDEFINED = 'Null or Undefined', LIST = 'List', OBJECT = 'Object', PRIMITIVE = 'Primitive'
