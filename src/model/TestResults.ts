@@ -1,11 +1,12 @@
 import persistentContext from "../util/PersistentContext";
+import {CompareFail} from "./CompareFail";
 
 export interface TestResult {
     order: number;
     success: boolean;
     path: string;
     payload: string;
-    failList: any[];
+    failList: CompareFail[];
     left: {baseUrl: string, value: any};
     right: {baseUrl: string, value: any};
 }
@@ -15,7 +16,9 @@ export interface TestResults {
     id: number;
     startAt?: Date;
     data: TestResult[];
-    result: 'success' | 'fail' | 'progress'
+    result: 'success' | 'fail' | 'progress',
+    successCount: number;
+    failCount: number;
 }
 
 type persistentStructure = {

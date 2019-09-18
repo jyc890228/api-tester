@@ -1,15 +1,5 @@
 import React from "react";
-import {
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableRow
-} from "@material-ui/core";
+import {Dialog, DialogContent, Table, TableBody, TableCell, TableHead, TableRow} from "@material-ui/core";
 import {TestResult, TestResults} from "../model/TestResults";
 import TestResultRow from "./TestResultRow";
 
@@ -26,7 +16,6 @@ const TestResultList: React.FC<Props> = (props: Props) => {
         setTestResults(props.filter ? props.testResults.data.filter(props.filter) : props.testResults.data);
     }, [props.testResults, props.filter]);
     return <Dialog open={props.open} onClose={props.handleClose} maxWidth='xl'>
-        <DialogTitle>Title</DialogTitle>
         <DialogContent>
             <Table>
                 <TableHead>
@@ -34,6 +23,7 @@ const TestResultList: React.FC<Props> = (props: Props) => {
                         <TableCell>Order</TableCell>
                         <TableCell>Result</TableCell>
                         <TableCell>Path</TableCell>
+                        <TableCell>Mismatch Property Count</TableCell>
                         <TableCell>Function</TableCell>
                     </TableRow>
                 </TableHead>
@@ -42,9 +32,6 @@ const TestResultList: React.FC<Props> = (props: Props) => {
                 </TableBody>
             </Table>
         </DialogContent>
-        <DialogActions>
-
-        </DialogActions>
     </Dialog>
 };
 

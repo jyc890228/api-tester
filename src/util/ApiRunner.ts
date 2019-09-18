@@ -27,7 +27,9 @@ export const run = (data: TestCase, listener: Listener): TestResults => {
         id: 0,
         startAt: new Date(),
         data: [],
-        result: 'progress'
+        result: 'progress',
+        successCount: 0,
+        failCount: 0
     };
 };
 

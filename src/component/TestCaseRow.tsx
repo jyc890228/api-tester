@@ -30,7 +30,9 @@ const TestCaseRow: React.FC<Props> = (props: Props) => {
         testCaseId: props.data.id,
         id: 0,
         data: [],
-        result: 'progress'
+        result: 'progress',
+        successCount: 0,
+        failCount: 0
     } as TestResults);
 
     React.useEffect(() => {
@@ -46,12 +48,16 @@ const TestCaseRow: React.FC<Props> = (props: Props) => {
     const handleStartClick = () => {
         const runningTest = run(props.data, {
             start: () => {
-                console.log(`test start`)
+                setSuccessCount(0);
+                setFailCount(0);
+                setRunning(true);
             },
             each: (apiCallResults: ApiCallResults) => updateState(assertAndPersist(apiCallResults)),
             end: () => {
                 const failTest = runningTest.data.find(d => !d.success);
                 runningTest.result = failTest ? 'fail' : 'success';
+                runningTest.successCount = runningTest.data.filter(r => r.success).length;
+                runningTest.failCount = runningTest.data.length - runningTest.successCount;
                 update(runningTest);
                 setRunning(false);
             }
@@ -109,11 +115,9 @@ const TestCaseRow: React.FC<Props> = (props: Props) => {
         setFilter(() => (testResult: TestResult) => !testResult.success);
         setOpen(true);
     };
-
-    const handleClose = () => setOpen(false);
     return <>
         <TestHistoryList open={openHistory} handleClose={() => setOpenHistory(false)} testCaseId={props.data.id}/>
-        <TestResultList open={open} handleClose={handleClose} testResults={latestTest} filter={filter}/>
+        <TestResultList open={open} handleClose={() => setOpen(false)} testResults={latestTest} filter={filter}/>
         <TableRow>
             <TableCell>{props.data.method}</TableCell>
             <TableCell>{props.data.path}</TableCell>

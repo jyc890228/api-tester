@@ -1,7 +1,7 @@
 import _ from 'underscore';
 import {CompareFail} from "../model/CompareFail";
 
-const PROPERTY_PATH_SEPARATOR = '//';
+const PROPERTY_PATH_SEPARATOR = ' > ';
 
 enum ObjectType {
     NULL_OR_UNDEFINED = 'Null or Undefined', LIST = 'List', OBJECT = 'Object', PRIMITIVE = 'Primitive'
@@ -32,98 +32,128 @@ function getObjectType(obj: any): ObjectType {
     return ObjectType.PRIMITIVE;
 }
 
-
 export function compare(leftSource: Source, rightSource: Source, config: Config): CompareFail[] {
-    let leftIndex = 0, rightIndex = 0;
-    let left = {root: leftSource.value} as any;
-    let right = {root: rightSource.value} as any;
-    let keys = ['root'];
+    leftSource.value = sortJsonByProperty(leftSource.value);
+    rightSource.value = sortJsonByProperty(rightSource.value);
+    const objType = getObjectType(leftSource.value);
+    if (objType === getObjectType(rightSource.value)) {
+        if (objType === ObjectType.LIST || objType === ObjectType.OBJECT) {
+            return compareObject(leftSource, rightSource, config);
+        }
+
+        if (leftSource.value === rightSource.value) {
+            return [];
+        }
+        return [{path: '', leftIndex: 0, rightIndex: 0, reason: `value does not equals! ${leftSource.value} !== ${rightSource.value}`}];
+    }
+    const fail = {path: '', leftIndex: 0, rightIndex: 0, reason: ''};
+
+    if ([objType, getObjectType(rightSource.value)].includes(ObjectType.NULL_OR_UNDEFINED)) {
+        fail.reason = 'response data does not exist!';
+    } else {
+        fail.reason = `response data type not equals! ${leftSource.value.constructor.name} !== ${rightSource.value.constructor.name}`;
+    }
+
+    return [fail];
+}
+
+function compareObject(leftSource: Source, rightSource: Source, config: Config): CompareFail[] {
+    let leftIndex = 1, rightIndex = 1;
+    let keys = Array.from(new Set([...Object.keys(leftSource.value), ...Object.keys(rightSource.value)]));
     const failList: CompareFail[] = [];
     while (keys.length) {
-        let key = keys.shift();
-        if (key) {
-            let propertyName = key;
-            let index = -1;
-            if (propertyName.includes(PROPERTY_PATH_SEPARATOR)) {
-                const fullPaths = propertyName.split(PROPERTY_PATH_SEPARATOR);
-                const paths = fullPaths.splice(0, fullPaths.length - 1).reduce((paths: string[], path: string) => {
-                    if (path.includes('[') && path.endsWith(']')) {
-                        let index = parseInt(path.substring(path.indexOf('[') + 1, path.length - 1));
-                        let propertyName = path.substring(0, path.indexOf('['));
-                        paths.push(propertyName);
-                        paths.push(index.toString());
-                    } else {
-                        paths.push(path);
-                    }
-                    return paths;
-                }, []) as string[];
+        const key = keys.shift()!;
+        const paths = key.split(PROPERTY_PATH_SEPARATOR);
+        const propertyName = paths.pop()!;
+        const left = paths.reduce((obj, path) => obj[path], leftSource.value);
+        const right = paths.reduce((obj, path) => obj[path], rightSource.value);
 
-                propertyName = fullPaths[fullPaths.length - 1];
-                if (propertyName.includes('[') && propertyName.endsWith(']')) {
-                    index = parseInt(propertyName.substring(propertyName.indexOf('[') + 1, propertyName.length - 1));
-                    propertyName = propertyName.substring(0, propertyName.indexOf('['));
-                }
-
-                left = paths.reduce((left, path) => left[path], {root: leftSource.value} as any);
-                right = paths.reduce((right, path) => right[path], {root: rightSource.value} as any);
-            }
-            if (left.hasOwnProperty(propertyName) && right.hasOwnProperty(propertyName)) {
-                let leftValue = left[propertyName], rightValue = right[propertyName];
-                if (0 <= index) {
-                    if (left[propertyName].hasOwnProperty(index) ^ right[propertyName].hasOwnProperty(index)) {
-                        left[propertyName].hasOwnProperty(index) ? leftIndex++ : rightIndex++;
-                        failList.push({path: key, leftIndex, rightIndex, reason: `property ${propertyName}[${index}] does not exist!`});
-                        continue;
-                    } else {
-                        leftValue = leftValue[index];
-                        rightValue = rightValue[index];
-                    }
-                }
-
-                if (getObjectType(leftValue) !== getObjectType(rightValue)) {
-                    leftIndex++;
-                    rightIndex++;
-                    failList.push({path: key, leftIndex, rightIndex, reason: `property ${propertyName} value type mismatch. ${getObjectType(leftValue)} !== ${getObjectType(rightValue)}`});
-                } else {
-                    switch (getObjectType(leftValue)) {
-                        case ObjectType.NULL_OR_UNDEFINED:
-                        case ObjectType.PRIMITIVE:
-                            leftIndex++;
-                            rightIndex++;
-                            if (leftValue !== rightValue) {
-                                let reason = `property ${propertyName} value does not equals! ${leftValue} !== ${rightValue}`;
-                                if (leftValue.constructor.name !== rightValue.constructor.name) {
-                                    reason = `property ${propertyName} value type mismatch. ${leftValue.constructor.name} !== ${rightValue.constructor.name}`
-                                }
-                                failList.push({path: key, leftIndex, rightIndex, reason});
+        if (left.hasOwnProperty(propertyName) && right.hasOwnProperty(propertyName)) {
+            const leftValue = left[propertyName], rightValue = right[propertyName];
+            if (getObjectType(leftValue) === getObjectType(rightValue)) {
+                switch (getObjectType(leftValue)) {
+                    case ObjectType.NULL_OR_UNDEFINED:
+                    case ObjectType.PRIMITIVE:
+                        leftIndex++;
+                        rightIndex++;
+                        if (leftValue !== rightValue) {
+                            let reason = `${key} value does not equals! ${leftValue} !== ${rightValue}`;
+                            if (leftValue.constructor.name !== rightValue.constructor.name) {
+                                reason = `${key} value type mismatch. ${leftValue.constructor.name} !== ${rightValue.constructor.name}`
                             }
-                            break;
-                        case ObjectType.LIST: {
-                            const maxLength = Math.max(leftValue.length, rightValue.length);
-                            keys = [..._.range(maxLength).map(i => `${key}[${i}]`), ...keys];
-                            break;
+                            failList.push({path: key, leftIndex, rightIndex, reason});
                         }
-                        case ObjectType.OBJECT: {
-                            const keyMapper = (propertyName: string) => `${key}${PROPERTY_PATH_SEPARATOR}${propertyName}`;
-                            const keySet = new Set([...Object.keys(leftValue).map(keyMapper), ...Object.keys(rightValue).map(keyMapper)]);
-                            keys = [...Array.from(keySet), ...keys];
-                            break;
-                        }
+                        break;
+                    case ObjectType.LIST: {
+                        const maxLength = Math.max(leftValue.length, rightValue.length);
+                        keys = [..._.range(maxLength).map(index => `${key}${PROPERTY_PATH_SEPARATOR}${index}`), ...keys];
+                        break;
+                    }
+                    case ObjectType.OBJECT: {
+                        const keyMapper = (propertyName: string) => `${key}${PROPERTY_PATH_SEPARATOR}${propertyName}`;
+                        const keySet = new Set([...Object.keys(leftValue).map(keyMapper), ...Object.keys(rightValue).map(keyMapper)]);
+                        keys = [...Array.from(keySet), ...keys];
+                        break;
                     }
                 }
             } else {
-                left.hasOwnProperty(propertyName) ? leftIndex++ : rightIndex++;
-                if (config.strict) {
-                    failList.push({path: key, leftIndex, rightIndex, reason: `property ${propertyName} does not exist!`});
-                } else {
-                    const value = left.hasOwnProperty(propertyName) ? left[propertyName] : right[propertyName];
-                    if (getObjectType(value) !== ObjectType.NULL_OR_UNDEFINED) {
-                        failList.push({path: key, leftIndex, rightIndex, reason: `property ${propertyName} value does not equals! ${left[propertyName]} !== ${right[propertyName]}`});
-                    }
-                }
+                leftIndex++;
+                rightIndex++;
+                failList.push({path: key, leftIndex, rightIndex, reason: `property ${propertyName} value type mismatch. ${getObjectType(leftValue)} !== ${getObjectType(rightValue)}`});
+            }
+        } else {
+            left.hasOwnProperty(propertyName) ? leftIndex++ : rightIndex++;
+
+            let reason = '';
+            if (getObjectType(left) === ObjectType.LIST || getObjectType(right) === ObjectType.LIST) {
+                reason = `${key} does not exist!`;
+            } else if (config.strict || getObjectType(left[propertyName] || right[propertyName]) !== ObjectType.NULL_OR_UNDEFINED) {
+                reason = `${key} does not exist!`;
+            }
+
+            if (reason) {
+                failList.push({path: key, leftIndex, rightIndex, reason});
             }
         }
     }
-
     return failList;
+}
+
+export function sortJsonByProperty(json: any) {
+    const objectType = getObjectType(json);
+    if (objectType === ObjectType.NULL_OR_UNDEFINED || objectType === ObjectType.PRIMITIVE) {
+        return;
+    }
+
+    const result: any = objectType === ObjectType.LIST ? [] : {};
+    let keys = Object.keys(json).sort();
+    while (keys.length) {
+        const key = keys.shift()!;
+        const paths = key.split(PROPERTY_PATH_SEPARATOR);
+        const propertyName = paths.pop()!;
+        const value = paths.reduce((obj, path) => obj[path], json)[propertyName];
+        const updateTarget = paths.reduce((result, path) => result[path], result);
+        switch (getObjectType(value)) {
+            case ObjectType.LIST: {
+                keys = [
+                    ...Object.keys(value).map(idx => `${key}${PROPERTY_PATH_SEPARATOR}${idx}`),
+                    ...keys
+                ];
+                updateTarget[propertyName] = [];
+                break;
+            }
+            case ObjectType.OBJECT: {
+                keys = [
+                    ...Object.keys(value).sort().map(nextPropertyName => `${key}${PROPERTY_PATH_SEPARATOR}${nextPropertyName}`),
+                    ...keys
+                ];
+                updateTarget[propertyName] = {};
+                break;
+            }
+            default: {
+                updateTarget[propertyName] = value;
+            }
+        }
+    }
+    return result;
 }
