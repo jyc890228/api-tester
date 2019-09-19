@@ -3,6 +3,7 @@ import {RequestMethod, ServerRequest} from "../model/Http";
 import {ApiCallResults} from "../model/ApiCallResult";
 import {TestResults} from "../model/TestResults";
 import axios, {AxiosError, AxiosResponse} from 'axios';
+import {sortJsonByProperty} from "../matcher/Comparator";
 
 interface Listener {
     start: () => void;
@@ -15,7 +16,7 @@ export const run = (data: TestCase, listener: Listener): TestResults => {
         const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
         for (let runningTestCount = 0; runningTestCount < data.testCount; runningTestCount++) {
-            await runTest(runningTestCount, data).then(listener.each);
+            await callApi(runningTestCount, data).then(listener.each);
             await wait(data.testSpeedInMilli);
         }
         listener.end();
@@ -34,14 +35,14 @@ export const run = (data: TestCase, listener: Listener): TestResults => {
 };
 
 
-function runTest(order: number, data: TestCase) {
+function callApi(order: number, data: TestCase) {
     const promiseList = beforeRequest(data).map(req => {
         return req.promise
             .then((res: AxiosResponse) => {
-                return {request: req, response: {ok: true, data: res.data}}
+                return {request: req, response: {ok: true, data: sortJsonByProperty(res.data)}}
             })
             .catch((error: AxiosError) => {
-                return {request: req, response: {ok: false, data: error.message}}
+                return {request: req, response: {ok: false, data: sortJsonByProperty(error.message)}}
             })
     });
 

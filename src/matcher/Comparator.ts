@@ -33,8 +33,6 @@ function getObjectType(obj: any): ObjectType {
 }
 
 export function compare(leftSource: Source, rightSource: Source, config: Config): CompareFail[] {
-    leftSource.value = sortJsonByProperty(leftSource.value);
-    rightSource.value = sortJsonByProperty(rightSource.value);
     const objType = getObjectType(leftSource.value);
     if (objType === getObjectType(rightSource.value)) {
         if (objType === ObjectType.LIST || objType === ObjectType.OBJECT) {
@@ -58,6 +56,7 @@ export function compare(leftSource: Source, rightSource: Source, config: Config)
 }
 
 function compareObject(leftSource: Source, rightSource: Source, config: Config): CompareFail[] {
+    const leftJson = JSON.stringify(leftSource.value, null, 2).split('\n'), rightJson = JSON.stringify(rightSource.value, null, 2).split('\n');
     let leftIndex = 1, rightIndex = 1;
     let keys = Array.from(new Set([...Object.keys(leftSource.value), ...Object.keys(rightSource.value)]));
     const failList: CompareFail[] = [];
@@ -122,7 +121,7 @@ function compareObject(leftSource: Source, rightSource: Source, config: Config):
 export function sortJsonByProperty(json: any) {
     const objectType = getObjectType(json);
     if (objectType === ObjectType.NULL_OR_UNDEFINED || objectType === ObjectType.PRIMITIVE) {
-        return;
+        return json;
     }
 
     const result: any = objectType === ObjectType.LIST ? [] : {};
