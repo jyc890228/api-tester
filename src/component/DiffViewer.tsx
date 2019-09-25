@@ -2,6 +2,7 @@ import React from "react";
 import {TestResult} from "../model/TestResults";
 import {Button, Dialog, DialogActions, DialogContent} from "@material-ui/core";
 import {CompareFail} from "../model/CompareFail";
+import _ from 'underscore'
 
 interface Props {
     open: boolean;
@@ -21,11 +22,18 @@ const DiffViewer: React.FC<Props> = (props: Props) => {
         const nextFailBySide: FailBySide = {left: {}, right: {}};
         nextFailBySide.left = props.result.failList.reduce((failByLeft, fail) => {
             failByLeft[fail.leftIndex] = fail;
+            for (let i = 0; i < fail.leftEndIndex; i++) {
+                failByLeft[i] = fail
+            }
             return failByLeft
         }, {} as { [index: number]: CompareFail });
 
         nextFailBySide.right = props.result.failList.reduce((failByRight, fail) => {
             failByRight[fail.rightIndex] = fail;
+            for (let i = 0; i < fail.rightEndIndex; i++) {
+                failByRight[i] = fail
+            }
+
             return failByRight
         }, {} as { [index: number]: CompareFail });
 
@@ -50,26 +58,34 @@ const DiffViewer: React.FC<Props> = (props: Props) => {
             });
     };
 
-    const JsonViewer = (side: 'left' | 'right') => {
+    const getStyle = (side: 'left' | 'right', idx: number): React.CSSProperties => {
         const style: React.CSSProperties = {
+            whiteSpace: 'pre-wrap',
+            display: 'inline-block',
             width: '47%',
-            display: 'inline-block'
+            margin: 0
         };
-        return <div style={style}>
-            <h4 style={{margin: 5}}>{result[side].baseUrl}{result.path}</h4>
-            <div style={{height: '75vh', overflowX: 'hidden', overflowY: 'auto'}}>
-                {renderJson(result, side)}
-            </div>
-        </div>
-    }
+
+        const failInfo: any = failBySide[side][idx];
+        if (failInfo) {
+            style.backgroundColor = 'rgba(255, 99, 51, 0.4)';
+        }
+
+        return style;
+    };
+
+    const leftJson = JSON.stringify(result.left.value, null, 2).split('\n');
+    const rightJson = JSON.stringify(result.right.value, null, 2).split('\n');
+    const maxLength = Math.max(leftJson.length, rightJson.length);
     return <Dialog open={open} onClose={handleClose} fullScreen>
         <DialogContent>
-            {/*<DialogContentText style={{height: '10vh', overflowY: 'scroll'}}>*/}
-            {/*    {result.failList.map((fail, idx) => <span key={idx}>{fail.reason}<br/></span>)}*/}
-            {/*</DialogContentText>*/}
-            {JsonViewer('left')}
-            <div style={{width: '6%', display: 'inline-block'}}> </div>
-            {JsonViewer('right')}
+            {_.range(0, maxLength).map(idx => {
+                return <div key={idx}>
+                    <pre style={getStyle('left', idx)}>{leftJson[idx]}</pre>
+                    <div style={{margin: 0, width: 40, display: 'inline-block'}}>{idx}</div>
+                    <pre style={getStyle('right', idx)}>{rightJson[idx]}</pre>
+                </div>
+            })}
         </DialogContent>
         <DialogActions>
             <Button onClick={handleClose}>Close</Button>

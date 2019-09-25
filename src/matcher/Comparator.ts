@@ -45,15 +45,19 @@ export function compare(leftSource: Source, rightSource: Source, config: Config)
         return [{
             path: '',
             leftIndex: 0,
+            leftEndIndex: 0,
             rightIndex: 0,
+            rightEndIndex: 0,
             reason: `value does not equals! ${leftSource.value} !== ${rightSource.value}`
         }];
     }
-    const fail = {path: '', leftIndex: 0, rightIndex: 0, reason: ''};
+    const fail: CompareFail = {path: '', leftIndex: 0, leftEndIndex: 0, rightIndex: 0, rightEndIndex: 0, reason: ''};
 
     if ([objType, getObjectType(rightSource.value)].includes(ObjectType.NULL_OR_UNDEFINED)) {
         fail.reason = 'response data does not exist!';
     } else {
+        fail.leftEndIndex = JSON.stringify(leftSource.value, null, 2).split('\n').length - 1;
+        fail.rightEndIndex = JSON.stringify(rightSource.value, null, 2).split('\n').length - 1;
         fail.reason = `response data type not equals! ${leftSource.value.constructor.name} !== ${rightSource.value.constructor.name}`;
     }
 
