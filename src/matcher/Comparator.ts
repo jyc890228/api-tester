@@ -42,7 +42,12 @@ export function compare(leftSource: Source, rightSource: Source, config: Config)
         if (leftSource.value === rightSource.value) {
             return [];
         }
-        return [{path: '', leftIndex: 0, rightIndex: 0, reason: `value does not equals! ${leftSource.value} !== ${rightSource.value}`}];
+        return [{
+            path: '',
+            leftIndex: 0,
+            rightIndex: 0,
+            reason: `value does not equals! ${leftSource.value} !== ${rightSource.value}`
+        }];
     }
     const fail = {path: '', leftIndex: 0, rightIndex: 0, reason: ''};
 
@@ -56,14 +61,16 @@ export function compare(leftSource: Source, rightSource: Source, config: Config)
 }
 
 function compareObject(leftSource: Source, rightSource: Source, config: Config): CompareFail[] {
-    const leftJson = JSON.stringify(leftSource.value, null, 2).split('\n'), rightJson = JSON.stringify(rightSource.value, null, 2).split('\n');
-    let leftIndex = 1, rightIndex = 1;
+    const leftJson = JSON.stringify(leftSource.value, null, 2).split('\n'),
+        rightJson = JSON.stringify(rightSource.value, null, 2).split('\n');
+
     let keys = Array.from(new Set([...Object.keys(leftSource.value), ...Object.keys(rightSource.value)]));
     const failList: CompareFail[] = [];
     while (keys.length) {
         const key = keys.shift()!;
         const paths = key.split(PROPERTY_PATH_SEPARATOR);
         const propertyName = paths.pop()!;
+
         const left = paths.reduce((obj, path) => obj[path], leftSource.value);
         const right = paths.reduce((obj, path) => obj[path], rightSource.value);
 
@@ -73,14 +80,21 @@ function compareObject(leftSource: Source, rightSource: Source, config: Config):
                 switch (getObjectType(leftValue)) {
                     case ObjectType.NULL_OR_UNDEFINED:
                     case ObjectType.PRIMITIVE:
-                        leftIndex++;
-                        rightIndex++;
                         if (leftValue !== rightValue) {
                             let reason = `${key} value does not equals! ${leftValue} !== ${rightValue}`;
                             if (leftValue.constructor.name !== rightValue.constructor.name) {
                                 reason = `${key} value type mismatch. ${leftValue.constructor.name} !== ${rightValue.constructor.name}`
                             }
-                            failList.push({path: key, leftIndex, rightIndex, reason});
+                            const leftIndex = findIndex(propertyName, paths, leftJson);
+                            const rightIndex = findIndex(propertyName, paths, rightJson);
+                            failList.push({
+                                path: key,
+                                leftIndex: leftIndex.start,
+                                leftEndIndex: leftIndex.end,
+                                rightIndex: rightIndex.start,
+                                rightEndIndex: rightIndex.end,
+                                reason
+                            });
                         }
                         break;
                     case ObjectType.LIST: {
@@ -96,13 +110,18 @@ function compareObject(leftSource: Source, rightSource: Source, config: Config):
                     }
                 }
             } else {
-                leftIndex++;
-                rightIndex++;
-                failList.push({path: key, leftIndex, rightIndex, reason: `property ${propertyName} value type mismatch. ${getObjectType(leftValue)} !== ${getObjectType(rightValue)}`});
+                const leftIndex = findIndex(propertyName, paths, leftJson);
+                const rightIndex = findIndex(propertyName, paths, rightJson);
+                failList.push({
+                    path: key,
+                    leftIndex: leftIndex.start,
+                    leftEndIndex: leftIndex.end,
+                    rightIndex: rightIndex.start,
+                    rightEndIndex: rightIndex.end,
+                    reason: `property ${propertyName} value type mismatch. ${getObjectType(leftValue)} !== ${getObjectType(rightValue)}`
+                });
             }
         } else {
-            left.hasOwnProperty(propertyName) ? leftIndex++ : rightIndex++;
-
             let reason = '';
             if (getObjectType(left) === ObjectType.LIST || getObjectType(right) === ObjectType.LIST) {
                 reason = `${key} does not exist!`;
@@ -111,11 +130,67 @@ function compareObject(leftSource: Source, rightSource: Source, config: Config):
             }
 
             if (reason) {
-                failList.push({path: key, leftIndex, rightIndex, reason});
+                const leftIndex = findIndex(propertyName, paths, leftJson);
+                const rightIndex = findIndex(propertyName, paths, rightJson);
+                failList.push({
+                    path: key,
+                    leftIndex: leftIndex.start,
+                    leftEndIndex: leftIndex.end,
+                    rightIndex: rightIndex.start,
+                    rightEndIndex: rightIndex.end,
+                    reason
+                });
             }
         }
     }
     return failList;
+}
+
+function findIndex(propertyName: string, paths: string[], jsonStringList: string[]) {
+    const result = [...paths, propertyName].reduce((config: any, path) => {
+        if (isNumber(path)) {
+            if (config.jsonList[1].trim() === ']') {
+                return config;
+            }
+            const idx = parseInt(path);
+            const padCount = config.jsonList[1].split('').reduce((whiteSpaceCount: number, char: string) => char === ' ' ? whiteSpaceCount + 1 : whiteSpaceCount, 0);
+            const pad = config.jsonList[1].substring(0, padCount);
+            let i = -1;
+            const nextIdx = config.jsonList.slice(1, config.jsonList.length - 1).findIndex((row: string) => {
+                if (row.startsWith(`${pad}{`) || row.startsWith(`${pad}[`)) {
+                    i++;
+                }
+
+                return idx === i;
+            }) + 1;
+            const nextEndIdx = config.jsonList.slice(nextIdx).findIndex((row: string) => row.startsWith(`${pad}}`) || row.startsWith(`${pad}]`));
+            const nextJsonList: string[] = config.jsonList.slice(nextIdx);
+            return {jsonList: nextJsonList, idx: config.idx + nextIdx, end: config.idx + nextIdx + nextEndIdx};
+        }
+        const nextIdx = config.jsonList.findIndex((row: string) => row.trim().startsWith(`"${path}"`));
+        const nextJsonList: string[] = config.jsonList.slice(nextIdx);
+        return {jsonList: nextJsonList, idx: config.idx + nextIdx}
+    }, {jsonList: jsonStringList, idx: 0});
+
+    return {
+        start: result.idx,
+        end: result.end || result.idx
+    }
+}
+
+function isNumber(str: string) {
+    const zeroChar = '0'.codePointAt(0)!!;
+    const nineChar = '9'.codePointAt(0)!!;
+    for (let i = 0; i < str.length; i++) {
+        const c = str[i].codePointAt(0);
+        if (!c) {
+            return false;
+        }
+        if (c < zeroChar || nineChar < c) {
+            return false;
+        }
+    }
+    return true;
 }
 
 export function sortJsonByProperty(json: any) {

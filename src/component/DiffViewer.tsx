@@ -1,6 +1,6 @@
 import React from "react";
 import {TestResult} from "../model/TestResults";
-import {Button, Dialog, DialogActions, DialogContent, DialogContentText} from "@material-ui/core";
+import {Button, Dialog, DialogActions, DialogContent} from "@material-ui/core";
 import {CompareFail} from "../model/CompareFail";
 
 interface Props {
@@ -58,18 +58,17 @@ const DiffViewer: React.FC<Props> = (props: Props) => {
         return <div style={style}>
             <h4 style={{margin: 5}}>{result[side].baseUrl}{result.path}</h4>
             <div style={{height: '75vh', overflowX: 'hidden', overflowY: 'auto'}}>
-                {renderJson(result, 'right')}
+                {renderJson(result, side)}
             </div>
         </div>
     }
-
     return <Dialog open={open} onClose={handleClose} fullScreen>
         <DialogContent>
-            <DialogContentText style={{height: '10vh', overflowY: 'scroll'}}>
-                {result.failList.map((fail, idx) => <span key={idx}>{fail.reason}<br/></span>)}
-            </DialogContentText>
+            {/*<DialogContentText style={{height: '10vh', overflowY: 'scroll'}}>*/}
+            {/*    {result.failList.map((fail, idx) => <span key={idx}>{fail.reason}<br/></span>)}*/}
+            {/*</DialogContentText>*/}
             {JsonViewer('left')}
-            <div style={{width: '6%', height: '75vh', display: 'inline-block'}}> </div>
+            <div style={{width: '6%', display: 'inline-block'}}> </div>
             {JsonViewer('right')}
         </DialogContent>
         <DialogActions>

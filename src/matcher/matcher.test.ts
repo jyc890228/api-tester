@@ -12,9 +12,15 @@ describe('matcher', () => {
                 sellerInfo: {
                     uid: 20,
                     name: '장영철',
+                    history: [
+                        {id: 0, price: 100},
+                        {id: 1, price: 100},
+                        {id: 2, price: 300},
+                        {id: 3, price: 3000}
+                    ],
                     phone: {
                         company: 'skt',
-                        number: '010-8859-8235'
+                        number: '010-8859-8235',
                     }
                 },
                 like: [10, 20, 30],
@@ -33,9 +39,14 @@ describe('matcher', () => {
                 sellerInfo: {
                     uid: 20,
                     name: '장영철',
+                    history: [
+                        {id: 0, price: 100},
+                        {id: 1, price: 200},
+                        {id: 2, price: 300}
+                    ],
                     phone: {
                         company: 'skt',
-                        number: '010-8859-8235'
+                        number: '010-8859-8235',
                     }
                 },
                 images: [
