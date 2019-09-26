@@ -228,9 +228,7 @@ export function sortJsonByProperty(json: any) {
                 updateTarget[propertyName] = {};
                 break;
             }
-            default: {
-                updateTarget[propertyName] = value;
-            }
+            default: updateTarget[propertyName] = value;
         }
     }
     return result;

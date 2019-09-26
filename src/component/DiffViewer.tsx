@@ -22,7 +22,7 @@ const DiffViewer: React.FC<Props> = (props: Props) => {
         const nextFailBySide: FailBySide = {left: {}, right: {}};
         nextFailBySide.left = props.result.failList.reduce((failByLeft, fail) => {
             failByLeft[fail.leftIndex] = fail;
-            for (let i = 0; i < fail.leftEndIndex; i++) {
+            for (let i = fail.leftIndex; i < fail.leftEndIndex; i++) {
                 failByLeft[i] = fail
             }
             return failByLeft
@@ -30,7 +30,7 @@ const DiffViewer: React.FC<Props> = (props: Props) => {
 
         nextFailBySide.right = props.result.failList.reduce((failByRight, fail) => {
             failByRight[fail.rightIndex] = fail;
-            for (let i = 0; i < fail.rightEndIndex; i++) {
+            for (let i = fail.rightIndex; i < fail.rightEndIndex; i++) {
                 failByRight[i] = fail
             }
 

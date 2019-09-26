@@ -136,7 +136,7 @@ function replacePathVariableIfExist(path: string, params: Param[]) {
 function generateValue(value: string): string {
     if (value.includes(',')) {
         const values: string[] = value.split(',');
-        value = values[random(0, values.length)];
+        value = values[random(0, values.length - 1)];
     }
 
     if (value.includes('~')) {
