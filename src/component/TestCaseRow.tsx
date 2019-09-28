@@ -12,17 +12,15 @@ import {
     TestResults,
     update
 } from "../model/TestResults";
-import TestResultList from "./TestResultList";
-import TestHistoryList from "./TestHistoryList";
 
 interface Props {
     data: TestCase;
     editTestCase: (id?: number) => void;
+    handleOpenHistory: (id: number) => void;
+    handleOpenTestResult: (testCaseId: number, testResultId: number, filter: (testResult: TestResult) => boolean) => void;
 }
 
 const TestCaseRow: React.FC<Props> = (props: Props) => {
-    const [open, setOpen] = React.useState(false);
-    const [openHistory, setOpenHistory] = React.useState(false);
     const [successCount, setSuccessCount] = React.useState(0);
     const [failCount, setFailCount] = React.useState(0);
     const [running, setRunning] = React.useState(false);
@@ -99,25 +97,11 @@ const TestCaseRow: React.FC<Props> = (props: Props) => {
     const handleStopClick = () => {
     };
 
-    const [filter, setFilter] = React.useState(() => (testResult: TestResult) => true);
+    const handleAllOpen = () => props.handleOpenTestResult(latestTest.testCaseId, latestTest.id, () => true);
+    const handelSuccessOpen = () => props.handleOpenTestResult(latestTest.testCaseId, latestTest.id, (testResult: TestResult) => testResult.success);
+    const handleFailOpen = () => props.handleOpenTestResult(latestTest.testCaseId, latestTest.id, (testResult: TestResult) => !testResult.success);
 
-    const handleAllOpen = () => {
-        setFilter(() => () => true);
-        setOpen(true);
-    };
-
-    const handelSuccessOpen = () => {
-        setFilter(() => (testResult: TestResult) => testResult.success);
-        setOpen(true);
-    };
-
-    const handleFailOpen = () => {
-        setFilter(() => (testResult: TestResult) => !testResult.success);
-        setOpen(true);
-    };
     return <>
-        <TestHistoryList open={openHistory} handleClose={() => setOpenHistory(false)} testCaseId={props.data.id}/>
-        <TestResultList open={open} handleClose={() => setOpen(false)} testResults={latestTest} filter={filter}/>
         <TableRow>
             <TableCell>{props.data.method}</TableCell>
             <TableCell>{props.data.path}</TableCell>
@@ -132,7 +116,7 @@ const TestCaseRow: React.FC<Props> = (props: Props) => {
                 {running ? <Button onClick={handleStopClick}>Stop</Button> :
                     <Button onClick={handleStartClick}>Start</Button>}
                 <Button onClick={() => props.editTestCase(props.data.id)}>Edit</Button>
-                <Button onClick={() => setOpenHistory(true)}>History</Button>
+                <Button onClick={() => props.handleOpenHistory(props.data.id)}>History</Button>
             </TableCell>
         </TableRow>
     </>

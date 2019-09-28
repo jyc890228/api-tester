@@ -56,8 +56,8 @@ export function compare(leftSource: Source, rightSource: Source, config: Config)
     if ([objType, getObjectType(rightSource.value)].includes(ObjectType.NULL_OR_UNDEFINED)) {
         fail.reason = 'response data does not exist!';
     } else {
-        fail.leftEndIndex = JSON.stringify(leftSource.value, null, 2).split('\n').length - 1;
-        fail.rightEndIndex = JSON.stringify(rightSource.value, null, 2).split('\n').length - 1;
+        fail.leftEndIndex = JSON.stringify(leftSource.value, null, 2).split('\n').length;
+        fail.rightEndIndex = JSON.stringify(rightSource.value, null, 2).split('\n').length;
         fail.reason = `response data type not equals! ${leftSource.value.constructor.name} !== ${rightSource.value.constructor.name}`;
     }
 
