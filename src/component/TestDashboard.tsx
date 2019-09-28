@@ -6,7 +6,7 @@ import TestCaseRow from "./TestCaseRow";
 import TestHistoryList from "./TestHistoryList";
 import TestResultList from "./TestResultList";
 import {TestResult} from "../model/TestResults";
-import DiffViewer, {TestResultId} from "./DiffViewer";
+import DiffDialog, {TestResultId} from "./DiffDialog";
 import JsonComparator from "./JsonComparator";
 
 type TestResultModalState = {id?: {testCaseId: number, testResultsId: number}, filter: (testResults: TestResult) => boolean};
@@ -30,7 +30,7 @@ const TestDashboard: React.FC = () => {
             handleClose={() => setOpenHistory({id: undefined})}
             handleOpenTestResult={handleOpenTestResults}
         />
-        <DiffViewer id={diffViewerOpener.id} handleClose={() => setDiffViewerOpener({id: undefined})}/>
+        <DiffDialog id={diffViewerOpener.id} handleClose={() => setDiffViewerOpener({id: undefined})}/>
         <TestResultList
             id={testResultOpener.id}
             handleClose={() => setTestResultOpener({id: undefined, filter: () => true})}

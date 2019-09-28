@@ -2,7 +2,7 @@ import React from "react";
 import {Dialog, DialogContent, Table, TableBody, TableCell, TableHead, TableRow} from "@material-ui/core";
 import {findTestResultByTestCaseIdAndId, TestResult} from "../model/TestResults";
 import TestResultRow from "./TestResultRow";
-import {TestResultId} from "./DiffViewer";
+import {TestResultId} from "./DiffDialog";
 
 interface Props {
     handleClose: () => void;

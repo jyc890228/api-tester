@@ -1,7 +1,7 @@
 import React from "react";
 import {Button, Dialog, DialogActions, DialogContent, TextField} from "@material-ui/core";
 import {compare, sortJsonByProperty} from "../matcher/Comparator";
-import JsonDiffViewer from "./JsonDiffViewer";
+import DiffViewer from "./DiffViewer";
 import {CompareFail} from "../model/CompareFail";
 
 interface Props {
@@ -38,7 +38,7 @@ const JsonComparator: React.FC<Props> = (props: Props) => {
             </div>
             <hr/>
             <div style={{height: '70%', overflowY: 'scroll'}}>
-                <JsonDiffViewer compareFails={compareResult.failList} value={{right: compareResult.right, left: compareResult.left}}/>
+                <DiffViewer compareFails={compareResult.failList} value={{right: compareResult.right, left: compareResult.left}}/>
             </div>
         </DialogContent>
         <DialogActions>
