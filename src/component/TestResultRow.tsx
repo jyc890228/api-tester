@@ -15,7 +15,7 @@ const TestResultRow: React.FC<Props> = (props: Props) => {
         <TableCell>
             <div>{result.path}</div>
             {result.failList.length ? <hr/> : null}
-            {result.failList.slice(0, 2).map((fail, index) => <div key={index}>{fail.reason}</div>)}
+            {/*{result.failList.slice(0, 2).map((fail, index) => <div key={index}>{fail.reason}</div>)}*/}
         </TableCell>
         <TableCell>
             {result.failList.length}

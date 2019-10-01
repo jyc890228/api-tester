@@ -33,19 +33,24 @@ class Row {
         this.index = index;
         this.rowString = rowString;
         this.padding = rowString.split('').findIndex(c => c !== ' ');
+
+        rowString = rowString.trim();
+        if (rowString[rowString.length - 1] === ',') {
+            rowString = rowString.substring(0, rowString.length - 1);
+        }
+
         const keyValue = rowString.split(':');
-        if (keyValue.length === 2) {
+        if (keyValue.length === 1) {
+            this.value = rowString;
+        } else if (keyValue.length === 2) {
             const key = keyValue[0].trim();
-            this.key = key.substring(1, key.length - 1);
+            this.key = key.substring(1, key.length - 1).trim();
             this.value = keyValue[1].trim();
-            if (this.value[this.value.length - 1] === ',') {
-                this.value = this.value.substring(0, this.value.length - 1);
-            }
         } else {
-            if (rowString[rowString.length - 1] === ',') {
-                rowString = rowString.substring(0, rowString.length - 1);
+            if (keyValue[0].startsWith("\"") && keyValue[0].endsWith("\"")) {
+                this.key = keyValue[0].substring(1, keyValue[0].length - 1).trim();
             }
-            this.value = rowString.trim();
+            this.value = keyValue.slice(1).join('').trim();
         }
         this.type = Row.getRowType(this.value);
     }

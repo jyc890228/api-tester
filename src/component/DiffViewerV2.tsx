@@ -24,7 +24,6 @@ interface FailBySide {
 const DiffViewerV2: React.FC<Props> = (props: Props) => {
     const {compareFails, value} = props;
     const [failBySide, setFailBySide] = React.useState({left: {}, right: {}} as FailBySide);
-    compareFails.forEach(console.log);
     React.useEffect(() => {
         const nextFailBySide: FailBySide = {left: {}, right: {}};
         nextFailBySide.left = getSide(compareFails, 'left');
