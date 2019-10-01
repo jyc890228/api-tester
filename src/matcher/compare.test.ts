@@ -1,6 +1,6 @@
 import {compareObject, Source} from "./ComparatorV2";
 
-describe('compare', () => {
+describe('test', () => {
     let left: Source;
     let right: Source;
     beforeEach(() => {

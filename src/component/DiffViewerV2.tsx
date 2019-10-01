@@ -66,9 +66,13 @@ const DiffViewerV2: React.FC<Props> = (props: Props) => {
             return style
         }
 
-        if (fail.start && fail.end) {
-            style.backgroundColor = 'rgba(255, 99, 51, 0.4)';
-        } else {
+        style.backgroundColor = 'rgba(155, 99, 51, 0.4)';
+        return style;
+    };
+
+    const getCenterStyle = (idx: number): React.CSSProperties => {
+        const style: React.CSSProperties = {margin: 0, width: 40, textAlign: 'center'};
+        if (failBySide.left[idx] && failBySide.right[idx]) {
             style.backgroundColor = 'rgba(155, 99, 51, 0.4)';
         }
         return style;
@@ -81,7 +85,7 @@ const DiffViewerV2: React.FC<Props> = (props: Props) => {
         {_.range(0, maxLength).map(idx => {
             return <div key={idx} style={{display: 'flex'}}>
                 <pre style={getStyle('left', idx)}>{leftJson[idx]}</pre>
-                <div style={{margin: 0, width: 40, textAlign: 'center'}}>{idx}</div>
+                <div style={getCenterStyle(idx)}>{idx}</div>
                 <pre style={getStyle('right', idx)}>{rightJson[idx]}</pre>
             </div>
         })}

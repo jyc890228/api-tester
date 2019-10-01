@@ -104,10 +104,26 @@ export function compareObject(leftSource: Source, rightSource: Source, config: C
         rightRows = toRows(rightSource.value);
     const maxLength = Math.max(leftRows.length, rightRows.length);
     const fails: CompareFailV2[] = [];
-    console.log('compare');
+    const path: {left: Row[], right: Row[]} = {left: [], right: []};
     for (let leftIndex = 0, rightIndex = 0, i = 0; i < maxLength; i++) {
         const left = leftRows[leftIndex], right = rightRows[rightIndex];
         if (left && right) {
+            if (left.isIterableStart()) {
+                path.left.push(left);
+            }
+
+            if (left.isIterableEnd()) {
+                path.left.pop();
+            }
+
+            if (right.isIterableStart()) {
+                path.right.push(right);
+            }
+
+            if (right.isIterableEnd()) {
+                path.right.pop();
+            }
+
             if (left.equals(right)) {
                 leftIndex++;
                 rightIndex++;

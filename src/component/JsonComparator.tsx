@@ -1,9 +1,9 @@
 import React from "react";
 import {Button, Dialog, DialogActions, DialogContent, TextField} from "@material-ui/core";
-import {sortJsonByProperty} from "../matcher/Comparator";
 import {CompareFailV2} from "../model/CompareFail";
 import DiffViewerV2 from "./DiffViewerV2";
 import {compareObject} from "../matcher/ComparatorV2";
+import {sortJsonByProperty} from "../util/util";
 
 interface Props {
     open: boolean;

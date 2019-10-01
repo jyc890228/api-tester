@@ -3,7 +3,6 @@ import {Button, TableCell, TableRow} from "@material-ui/core";
 import {TestCase} from "../model/TestCase";
 import {run} from "../util/ApiRunner";
 import {ApiCallResults} from "../model/ApiCallResult";
-import {compare} from "../matcher/Comparator";
 import {
     appendTestResult,
     findTestResultsByTestCaseId,
@@ -12,6 +11,7 @@ import {
     TestResults,
     update
 } from "../model/TestResults";
+import {compareObject} from "../matcher/ComparatorV2";
 
 interface Props {
     data: TestCase;
@@ -65,7 +65,7 @@ const TestCaseRow: React.FC<Props> = (props: Props) => {
         setLatestTest(runningTest);
 
         const assertAndPersist = (apiCallResults: ApiCallResults): TestResult => {
-            let result = compare({
+            let result = compareObject({
                 sourceName: apiCallResults.server1Result.request.url,
                 value: apiCallResults.server1Result.response.data
             }, {

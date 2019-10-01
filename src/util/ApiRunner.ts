@@ -3,7 +3,7 @@ import {RequestMethod, ServerRequest} from "../model/Http";
 import {ApiCallResults} from "../model/ApiCallResult";
 import {TestResults} from "../model/TestResults";
 import axios, {AxiosError, AxiosResponse} from 'axios';
-import {sortJsonByProperty} from "../matcher/Comparator";
+import {sortJsonByProperty} from "./util";
 
 interface Listener {
     start: () => void;

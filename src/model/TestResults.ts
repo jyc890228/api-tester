@@ -1,12 +1,12 @@
 import persistentContext from "../util/PersistentContext";
-import {CompareFail} from "./CompareFail";
+import {CompareFailV2} from "./CompareFail";
 
 export interface TestResult {
     order: number;
     success: boolean;
     path: string;
     payload: string;
-    failList: CompareFail[];
+    failList: CompareFailV2[];
     left: {baseUrl: string, value: any};
     right: {baseUrl: string, value: any};
 }
