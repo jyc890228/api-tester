@@ -5,8 +5,8 @@ export interface TestCase {
     id: number;
     testCount: number;
     testSpeedInMilli: number;
-    server1: string;
-    server2: string;
+    left: string;
+    right: string;
     path: string;
     method: RequestMethod;
     pathVariables: string[]

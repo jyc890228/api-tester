@@ -1,11 +1,6 @@
 import {CompareFailV2, FailReason} from "../model/CompareFail";
 
-export const PROPERTY_PATH_SEPARATOR = ' > ';
 export const SPACE = 2;
-
-enum ObjectType {
-    NULL_OR_UNDEFINED = 'Null or Undefined', LIST = 'List', OBJECT = 'Object', PRIMITIVE = 'Primitive'
-}
 
 export interface Source {
     sourceName: string;
@@ -104,31 +99,14 @@ class Row {
 }
 
 
-export function compareObject(leftSource: Source, rightSource: Source, config: Config): CompareFailV2[] {
-    const leftRows = toRows(leftSource.value),
-        rightRows = toRows(rightSource.value);
+export function compareObject(leftValue: any, rightValue: any, config: Config): CompareFailV2[] {
+    const leftRows = toRows(leftValue),
+        rightRows = toRows(rightValue);
     const maxLength = Math.max(leftRows.length, rightRows.length);
     const fails: CompareFailV2[] = [];
-    const path: {left: Row[], right: Row[]} = {left: [], right: []};
     for (let leftIndex = 0, rightIndex = 0, i = 0; i < maxLength; i++) {
         const left = leftRows[leftIndex], right = rightRows[rightIndex];
         if (left && right) {
-            if (left.isIterableStart()) {
-                path.left.push(left);
-            }
-
-            if (left.isIterableEnd()) {
-                path.left.pop();
-            }
-
-            if (right.isIterableStart()) {
-                path.right.push(right);
-            }
-
-            if (right.isIterableEnd()) {
-                path.right.pop();
-            }
-
             if (left.equals(right)) {
                 leftIndex++;
                 rightIndex++;
@@ -213,7 +191,6 @@ export function compareObject(leftSource: Source, rightSource: Source, config: C
                 }
             }
         }
-
     }
     return fails;
 }

@@ -1,16 +1,9 @@
-import React from "react";
+import * as React from "react";
 import {Button, TableCell, TableRow} from "@material-ui/core";
 import {TestCase} from "../model/TestCase";
-import {run} from "../util/ApiRunner";
-import {ApiCallResults} from "../model/ApiCallResult";
-import {
-    appendTestResult,
-    findTestResultsByTestCaseId,
-    save,
-    TestResult,
-    TestResults,
-    update
-} from "../model/TestResults";
+import {ApiCallHistory, Listener, Response, run} from "../util/ApiRunner";
+
+import {findTestResultsByTestCaseId, save, TestResult, TestResults, update} from "../model/TestResults";
 import {compareObject} from "../matcher/ComparatorV2";
 
 interface Props {
@@ -20,106 +13,112 @@ interface Props {
     handleOpenTestResult: (testCaseId: number, testResultId: number, filter: (testResult: TestResult) => boolean) => void;
 }
 
-const TestCaseRow: React.FC<Props> = (props: Props) => {
-    const [successCount, setSuccessCount] = React.useState(0);
-    const [failCount, setFailCount] = React.useState(0);
-    const [running, setRunning] = React.useState(false);
-    const [latestTest, setLatestTest] = React.useState({
-        testCaseId: props.data.id,
-        id: 0,
-        data: [],
-        result: 'progress',
-        successCount: 0,
-        failCount: 0
-    } as TestResults);
+interface State {
+    latestTest: TestResults;
+    running: boolean;
+}
 
-    React.useEffect(() => {
-        const testResults = findTestResultsByTestCaseId(props.data.id);
-        if (testResults.length) {
-            const latestTestResult = testResults.sort((r1, r2) => r1.id < r2.id ? 1 : 0)[testResults.length - 1];
-            setSuccessCount(latestTestResult.data.filter(r => r.success).length);
-            setFailCount(latestTestResult.data.filter(r => !r.success).length);
-            setLatestTest(latestTestResult);
-        }
-    }, [props.data.id]);
+const defaultValue: TestResults = {
+    id: 0,
+    testCaseId: 0,
+    successCount: 0,
+    failCount: 0,
+    result: 'success',
+    data: []
+}
 
-    const handleStartClick = () => {
-        const runningTest = run(props.data, {
-            start: () => {
-                setSuccessCount(0);
-                setFailCount(0);
-                setRunning(true);
-            },
-            each: (apiCallResults: ApiCallResults) => updateState(assertAndPersist(apiCallResults)),
-            end: () => {
-                const failTest = runningTest.data.find(d => !d.success);
-                runningTest.result = failTest ? 'fail' : 'success';
-                runningTest.successCount = runningTest.data.filter(r => r.success).length;
-                runningTest.failCount = runningTest.data.length - runningTest.successCount;
-                update(runningTest);
-                setRunning(false);
-            }
-        });
+export default class TestCaseRow extends React.Component<Props, State> implements Listener {
 
-        save(runningTest);
-        setLatestTest(runningTest);
+    constructor(props: Props) {
+        super(props);
+        this.state = {latestTest: findTestResultsByTestCaseId(props.data.id).pop() || defaultValue, running: false};
+        this.handleStartClick = this.handleStartClick.bind(this);
+    }
 
-        const assertAndPersist = (apiCallResults: ApiCallResults): TestResult => {
-            let result = compareObject({
-                sourceName: apiCallResults.server1Result.request.url,
-                value: apiCallResults.server1Result.response.data
-            }, {
-                sourceName: apiCallResults.server2Result.request.url,
-                value: apiCallResults.server2Result.response.data
-            }, {strict: false});
 
-            const testResult = {
-                order: apiCallResults.order,
-                path: apiCallResults.path,
-                payload: apiCallResults.payload,
-                success: result.length === 0,
-                failList: result,
-                left: {baseUrl: apiCallResults.server1Result.request.url, value: apiCallResults.server1Result.response.data},
-                right: {baseUrl: apiCallResults.server2Result.request.url, value: apiCallResults.server2Result.response.data}
-            };
-            appendTestResult(runningTest.testCaseId, runningTest.id, testResult);
-            return testResult;
-        };
+    static getDerivedStateFromProps(nextProps: Props, prevState: State) {
+        return findTestResultsByTestCaseId(nextProps.data.id).pop() || defaultValue;
+    }
 
-        const updateState = (testResult: TestResult) => {
-            runningTest.data.push(testResult);
-            setLatestTest(runningTest);
-            (testResult.success ? setSuccessCount : setFailCount)(count => count + 1);
-        };
+    render() {
+        const {data, editTestCase, handleOpenHistory} = this.props;
+        const {latestTest, running} = this.state;
 
-    };
-
-    const handleStopClick = () => {
-    };
-
-    const handleAllOpen = () => props.handleOpenTestResult(latestTest.testCaseId, latestTest.id, () => true);
-    const handelSuccessOpen = () => props.handleOpenTestResult(latestTest.testCaseId, latestTest.id, (testResult: TestResult) => testResult.success);
-    const handleFailOpen = () => props.handleOpenTestResult(latestTest.testCaseId, latestTest.id, (testResult: TestResult) => !testResult.success);
-
-    return <>
-        <TableRow>
-            <TableCell>{props.data.method}</TableCell>
-            <TableCell>{props.data.path}</TableCell>
+        return <TableRow>
+            <TableCell>{data.method}</TableCell>
+            <TableCell>{data.path}</TableCell>
             <TableCell>
-                <span onClick={handleAllOpen} style={{cursor: 'pointer'}}>{props.data.testCount}</span>
+                <span onClick={() => this.openTestResults(() => true)} style={{cursor: 'pointer'}}>
+                    {data.testCount}
+                </span>
                 <span> : </span>
-                <span onClick={handelSuccessOpen} style={{color: 'blue', cursor: 'pointer'}}>{successCount}</span>
+                <span onClick={() => this.openTestResults(testResult => testResult.success)} style={{color: 'blue', cursor: 'pointer'}}>
+                    {latestTest.successCount}
+                </span>
                 <span> / </span>
-                <span onClick={handleFailOpen} style={{color: 'red', cursor: 'pointer'}}>{failCount}</span>
+                <span onClick={() => this.openTestResults(testResult => !testResult.success)} style={{color: 'red', cursor: 'pointer'}}>
+                    {latestTest.failCount}
+                </span>
             </TableCell>
             <TableCell>
-                {running ? <Button onClick={handleStopClick}>Stop</Button> :
-                    <Button onClick={handleStartClick}>Start</Button>}
-                <Button onClick={() => props.editTestCase(props.data.id)}>Edit</Button>
-                <Button onClick={() => props.handleOpenHistory(props.data.id)}>History</Button>
+                {running ? <Button onClick={this.handleStopClick}>Stop</Button> :
+                    <Button onClick={this.handleStartClick}>Start</Button>}
+                <Button onClick={() => editTestCase(data.id)}>Edit</Button>
+                <Button onClick={() => handleOpenHistory(data.id)}>History</Button>
             </TableCell>
-        </TableRow>
-    </>
-};
+        </TableRow>;
+    }
 
-export default TestCaseRow;
+    handleStartClick = () => run(this.props.data, this);
+
+    handleStopClick() {
+
+    }
+
+    openTestResults(filter: (testResult: TestResult) => boolean) {
+        const {latestTest} = this.state;
+        this.props.handleOpenTestResult(latestTest.testCaseId, latestTest.id, filter);
+    }
+
+    start(history: ApiCallHistory) {
+        this.setState({
+            latestTest: save({
+                id: 0,
+                testCaseId: this.props.data.id,
+                successCount: 0,
+                failCount: 0,
+                result: 'progress',
+                data: []
+            }),
+            running: true
+        });
+    }
+
+    each(response: Response) {
+        const {data} = this.props;
+        let result = compareObject(response.left, response.right, {strict: false});
+
+        const testResult: TestResult = {
+            order: response.order,
+            path: response.path,
+            payload: response.payload,
+            left: {baseUrl: data.left, value: response.left},
+            right: {baseUrl: data.right, value: response.right},
+            success: result.length === 0,
+            failList: result
+        };
+
+        const {latestTest} = this.state;
+        testResult.success ? latestTest.successCount += 1 : latestTest.failCount += 1;
+        latestTest.data.push(testResult);
+        update(latestTest);
+        this.setState({latestTest, running: true})
+    }
+
+    end(history: ApiCallHistory) {
+        const {latestTest} = this.state;
+        latestTest.result = latestTest.failCount === 0 ? 'success' : 'fail';
+        update(latestTest);
+        this.setState({latestTest, running: false})
+    }
+}

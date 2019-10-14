@@ -13,12 +13,17 @@ interface Props {
 const DiffDialog: React.FC<Props> = (props: Props) => {
     if (props.id) {
         const {testCaseId, testResultId, order} = props.id;
-        const testResult = findTestResultByTestCaseIdAndId(testCaseId, testResultId).data.find(row => row.order === order)!!;
+        const testResult = findTestResultByTestCaseIdAndId(testCaseId, testResultId);
+        const testResults = testResult.data.find(row => row.order === order)!!;
         return <Dialog open={true} onClose={props.handleClose} fullScreen>
             <DialogContent>
+                <div style={{display: 'flex', whiteSpace: 'pre-wrap'}}>
+                    <div style={{width: '45%'}}>{testResults.left.baseUrl}{testResults.path}</div>
+                    <div style={{width: '45%'}}>{testResults.right.baseUrl}{testResults.path}</div>
+                </div>
                 <DiffViewerV2
-                    compareFails={testResult.failList}
-                    value={{left: testResult.left.value, right: testResult.right.value}}/>
+                    compareFails={testResults.failList}
+                    value={{left: testResults.left.value, right: testResults.right.value}}/>
             </DialogContent>
             <DialogActions>
                 <Button onClick={props.handleClose}>Close</Button>

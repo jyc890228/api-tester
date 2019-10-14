@@ -38,7 +38,7 @@ export const findTestResultByTestCaseIdAndId = (testCaseId: number, id: number):
     return findTestResultsByTestCaseId(testCaseId).find(testCase => testCase.id === id)!!
 };
 
-export const save = (testResults: TestResults) => {
+export const save = (testResults: TestResults): TestResults => {
     const data = findAll();
     if (!data.byTestCaseId[testResults.testCaseId])
         data.byTestCaseId[testResults.testCaseId] = [];
@@ -46,18 +46,25 @@ export const save = (testResults: TestResults) => {
     testResults.id = generateId(data);
     data.byTestCaseId[testResults.testCaseId].push(testResults);
     persistentContext.save(key, data);
+    return testResults;
 };
 
 export const appendTestResult = (testCaseId: number, id: number, testResult: TestResult) => {
-    const testCases = findTestResultByTestCaseIdAndId(testCaseId, id);
-    testCases.data.push(testResult);
-    update(testCases);
+    const testResults = findTestResultByTestCaseIdAndId(testCaseId, id);
+    testResults.data.push(testResult);
+    update(testResults);
 };
 
 export const update = (testResults: TestResults) => {
     const data = findAll();
     const index = data.byTestCaseId[testResults.testCaseId].findIndex(record => record.id === testResults.id);
     data.byTestCaseId[testResults.testCaseId][index] = testResults;
+    persistentContext.save(key, data);
+};
+
+export const deleTe = (testCaseId: number, id: number) => {
+    const data = findAll();
+    data.byTestCaseId[testCaseId] = data.byTestCaseId[testCaseId].filter(testCase => testCase.id !== id);
     persistentContext.save(key, data);
 };
 

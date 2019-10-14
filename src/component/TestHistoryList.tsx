@@ -1,5 +1,6 @@
 import React from "react";
 import {
+    Button,
     Dialog,
     DialogActions,
     DialogContent,
@@ -10,7 +11,7 @@ import {
     TableHead,
     TableRow
 } from "@material-ui/core";
-import {findTestResultsByTestCaseId, TestResult, TestResults} from "../model/TestResults";
+import {deleTe, findTestResultsByTestCaseId, TestResult, TestResults} from "../model/TestResults";
 import {findById} from "../model/TestCase";
 
 interface Props {
@@ -23,7 +24,10 @@ const TestHistoryList: React.FC<Props> = (props: Props) => {
     const testCase = props.testCaseId ? findById(props.testCaseId) : undefined;
 
     if (props.testCaseId && testCase) {
-        const testResults = props.testCaseId ? findTestResultsByTestCaseId(props.testCaseId) : [];
+        const testResults = props.testCaseId ? findTestResultsByTestCaseId(props.testCaseId) : [] as TestResults[];
+        const removeTestResults = (id: number) => {
+            deleTe(props.testCaseId!!, id);
+        };
         return <Dialog open={true} onClose={props.handleClose} maxWidth='xl'>
             <DialogTitle>{`${testCase.method} ${testCase.path}`}</DialogTitle>
             <DialogContent>
@@ -35,10 +39,16 @@ const TestHistoryList: React.FC<Props> = (props: Props) => {
                             <TableCell>Result</TableCell>
                             <TableCell>Total Test Count</TableCell>
                             <TableCell>Success / Fail Count</TableCell>
+                            <TableCell>Function</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {testResults.map(result => <TestHistoryRow key={result.id} testResults={result} handleOpenTestResult={props.handleOpenTestResult}/>)}
+                        {testResults.map(result => <TestHistoryRow
+                            key={result.id}
+                            testResults={result}
+                            handleOpenTestResult={props.handleOpenTestResult}
+                            removeTestResults={removeTestResults}
+                        />)}
                     </TableBody>
                 </Table>
             </DialogContent>
@@ -53,6 +63,7 @@ const TestHistoryList: React.FC<Props> = (props: Props) => {
 interface RowProps {
     testResults: TestResults
     handleOpenTestResult: (testCaseId: number, testResultId: number, filter: (testResult: TestResult) => boolean) => void;
+    removeTestResults: (id: number) => void
 }
 
 const TestHistoryRow: React.FC<RowProps> = (props: RowProps) => {
@@ -76,6 +87,9 @@ const TestHistoryRow: React.FC<RowProps> = (props: RowProps) => {
             <span onClick={() => open((testResult: TestResult) => !testResult.success)} style={{color: 'red', cursor: 'pointer'}}>
                 {testResults.failCount}
             </span>
+        </TableCell>
+        <TableCell>
+            <Button onClick={() => props.removeTestResults(testResults.id)}>X</Button>
         </TableCell>
     </TableRow>
 

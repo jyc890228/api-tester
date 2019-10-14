@@ -4,11 +4,13 @@ import {Button, TableCell, TableRow} from "@material-ui/core";
 
 interface Props {
     result: TestResult;
-    handleDiffViewer: () => void
+    handleDiffViewer: () => void;
+    handleRetryClick: (path: string) => void
 }
 
 const TestResultRow: React.FC<Props> = (props: Props) => {
     const {result, handleDiffViewer} = props;
+    const retryTest = () => props.handleRetryClick(result.path);
     return <TableRow>
         <TableCell>{result.order}</TableCell>
         <TableCell>{result.success ? 'success' : 'fail'}</TableCell>
@@ -22,7 +24,7 @@ const TestResultRow: React.FC<Props> = (props: Props) => {
         </TableCell>
         <TableCell>
             <Button onClick={() => handleDiffViewer()}>Show Diff</Button>
-            <Button>Retry</Button>
+            <Button onClick={retryTest}>Retry</Button>
         </TableCell>
     </TableRow>
 };

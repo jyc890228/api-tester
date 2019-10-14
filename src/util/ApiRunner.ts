@@ -1,98 +1,68 @@
 import {Param, TestCase} from "../model/TestCase";
-import {RequestMethod, ServerRequest} from "../model/Http";
-import {ApiCallResults} from "../model/ApiCallResult";
-import {TestResults} from "../model/TestResults";
+import {RequestMethod} from "../model/Http";
 import axios, {AxiosError, AxiosResponse} from 'axios';
 import {sortJsonByProperty} from "./util";
 
-interface Listener {
-    start: () => void;
-    each: (results: ApiCallResults) => void;
-    end: () => void;
+export interface Listener {
+    start: (history: ApiCallHistory) => void;
+    each: (results: Response) => void;
+    end: (history: ApiCallHistory) => void;
 }
 
-export const run = (data: TestCase, listener: Listener): TestResults => {
+export interface ApiCallHistory {
+    status: 'stop' | 'progress' | 'done';
+    method: RequestMethod;
+    responses: Response[];
+}
+
+export interface Response {
+    order: number;
+    path: string;
+    payload: string;
+    left: any;
+    right: any;
+}
+
+export const run = (data: TestCase, listener: Listener) => {
+    const history: ApiCallHistory = {status: 'progress', method: data.method, responses: []};
     setTimeout(async () => {
         const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
         for (let runningTestCount = 0; runningTestCount < data.testCount; runningTestCount++) {
-            await callApi(runningTestCount, data).then(listener.each);
+            await callApi(runningTestCount, data).then(res => {
+                history.responses.push(res);
+                listener.each(res);
+            });
             await wait(data.testSpeedInMilli);
         }
-        listener.end();
+        listener.end(history);
     }, 0);
 
-    listener.start();
-    return {
-        testCaseId: data.id,
-        id: 0,
-        startAt: new Date(),
-        data: [],
-        result: 'progress',
-        successCount: 0,
-        failCount: 0
-    };
+    listener.start(history);
 };
 
 
-function callApi(order: number, data: TestCase) {
-    const promiseList = beforeRequest(data).map(req => {
-        return req.promise
-            .then((res: AxiosResponse) => {
-                return {request: req, response: {ok: true, data: sortJsonByProperty(res.data)}}
-            })
-            .catch((error: AxiosError) => {
-                return {request: req, response: {ok: false, data: sortJsonByProperty(error.message)}}
-            })
-    });
-
-
-    return Promise.all(promiseList).then(results => {
-        return {
-            order: order,
-            path: results[0].request.path,
-            payload: results[0].request.payload,
-            server1Result: results.find(result => result.request.url.startsWith(data.server1))!!,
-            server2Result: results.find(result => result.request.url.startsWith(data.server2))!!,
-        }
-    });
-}
-
-
-function beforeRequest(data: TestCase): ServerRequest[] {
+function callApi(order: number, data: TestCase): Promise<Response> {
     const path = replacePathVariableIfExist(data.path, data.params);
-    const requests = [createServerRequest(data.server1, path, data.method), createServerRequest(data.server2, path, data.method)];
+    const queryString = data.method === RequestMethod.GET ? makeQueryString(data.pathVariables, data.params) : '';
+    const payload = data.method === RequestMethod.GET ? {} : makePayload(data.params);
 
-    if (data.method === 'GET') {
-        const queryString = makeQueryString(data.pathVariables, data.params);
-        requests.forEach(req => {
-            req.path += queryString;
-            req.promise = axios.get(`${req.url}${req.path}`);
-        });
-    } else {
-        const payload = makeJsonPayload(data.params);
-
-        requests.forEach(req => {
-            req.payload = payload;
-            req.promise = axios.request({
-                url: `${req.url}${req.path}`,
-                method: req.method,
-                data: req.payload
-            })
-        });
-    }
-
-    return requests;
-}
-
-function createServerRequest(url: string, path: string, method: RequestMethod): ServerRequest {
-    return {
-        url: url,
+    return Promise.all([request(data.left), request(data.right)]).then(res => ({
+        order: order,
         path: path,
-        queryString: '',
-        payload: '',
-        method: method,
-        promise: null!!
+        payload: payload,
+        left: res.find(result => result[data.left])!![data.left],
+        right: res.find(result => result[data.right])!![data.right]
+    }));
+
+    function request(baseUrl: string) {
+        return axios.request({
+            url: `${baseUrl}${path}${queryString}`,
+            data: payload,
+            method: data.method
+        })
+            .then((res: AxiosResponse) => ({[baseUrl]: sortJsonByProperty(res.data)}))
+            .catch((error: AxiosError) => ({[baseUrl]: error.message}));
     }
 }
 
@@ -111,15 +81,15 @@ export function makeQueryString(pathVariables: string[], params: Param[]): strin
     return queryString.substring(0, queryString.length - 1)
 }
 
-function makeJsonPayload(params: Param[]): string {
+function makePayload(params: Param[]): any {
     if (!params.length) {
         return '';
     }
 
-    return JSON.stringify(params.reduce((jsonData: { [key: string]: any }, param, idx) => {
+    return params.reduce((jsonData: { [key: string]: any }, param) => {
         jsonData[param.name] = generateValue(param.value);
         return jsonData
-    }, {}))
+    }, {})
 }
 
 function replacePathVariableIfExist(path: string, params: Param[]) {

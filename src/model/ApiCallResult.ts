@@ -4,8 +4,8 @@ export interface ApiCallResults {
     order: number;
     path: string;
     payload: string;
-    server1Result: ApiCallResult;
-    server2Result: ApiCallResult;
+    left: ApiCallResult;
+    right: ApiCallResult;
 }
 
 export interface ApiCallResult {

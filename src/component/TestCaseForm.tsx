@@ -36,8 +36,8 @@ const TestCaseForm: React.FC<Props> = (props: Props) => {
         id: 1,
         testCount: 100,
         testSpeedInMilli: 1000,
-        server1: 'http://localhost:8006',
-        server2: 'http://localhost:8080',
+        left: 'http://localhost:8006',
+        right: 'http://localhost:8080',
         method: RequestMethod.GET,
         path: '',
         pathVariables: [],
@@ -97,8 +97,8 @@ const TestCaseForm: React.FC<Props> = (props: Props) => {
                         <TextField type='number' label='test speed (millisecond)' name='testSpeedInMilli' value={formData.testSpeedInMilli} onChange={updateValue} required/>
                     </div>
                     <div style={{marginTop: 10}}>
-                        <TextField type='text' label='test server A' name='server1' value={formData.server1} onChange={updateValue} required/>
-                        <TextField type='text' label='test server B' name='server2' value={formData.server2} onChange={updateValue} required/>
+                        <TextField type='text' label='test server A' name='left' value={formData.left} onChange={updateValue} required/>
+                        <TextField type='text' label='test server B' name='right' value={formData.right} onChange={updateValue} required/>
                     </div>
                     <div style={{marginTop: 10}}>
                         <TextField name='method' value={formData.method} select onChange={updateValue} SelectProps={{native: true}} margin='normal' style={{width: 75}}>

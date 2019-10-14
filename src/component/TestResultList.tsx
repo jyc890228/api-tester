@@ -3,6 +3,7 @@ import {Dialog, DialogContent, Table, TableBody, TableCell, TableHead, TableRow}
 import {findTestResultByTestCaseIdAndId, TestResult} from "../model/TestResults";
 import TestResultRow from "./TestResultRow";
 import {TestResultId} from "./DiffDialog";
+import {findById} from "../model/TestCase";
 
 interface Props {
     handleClose: () => void;
@@ -22,6 +23,7 @@ const TestResultList: React.FC<Props> = (props: Props) => {
     };
 
     if (props.id) {
+        const testCase = findById(props.id.testCaseId)!!;
         return <Dialog open={true} onClose={props.handleClose} maxWidth='xl'>
             <DialogContent>
                 <Table>
@@ -40,6 +42,7 @@ const TestResultList: React.FC<Props> = (props: Props) => {
                                 key={result.order}
                                 result={result}
                                 handleDiffViewer={() => props.handleDiffViewer(toTestResultId(result.order))}
+                                handleRetryClick={path => {}}
                             />)}
                     </TableBody>
                 </Table>
