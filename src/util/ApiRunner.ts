@@ -49,7 +49,7 @@ function callApi(order: number, data: TestCase): Promise<Response> {
 
     return Promise.all([request(data.left), request(data.right)]).then(res => ({
         order: order,
-        path: path,
+        path: `${path}${queryString}`,
         payload: payload,
         left: res.find(result => result[data.left])!![data.left],
         right: res.find(result => result[data.right])!![data.right]
@@ -70,6 +70,8 @@ export function makeQueryString(pathVariables: string[], params: Param[]): strin
     if (!params.length) {
         return '';
     }
+
+
 
     const queryString = params.reduce((queryString, param) => {
         if (pathVariables.includes(param.name.trim())) {
